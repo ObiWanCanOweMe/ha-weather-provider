@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HA Weather Provider",
+        "description": "Set up your weather provider credentials.",
+        "data": {
+          "api_key": "API Key",
+          "location": "Location"
+        }
+      }
+    }
+  }
+}

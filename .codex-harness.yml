@@ -1,0 +1,15 @@
+kind: home-assistant-custom-integration
+checks:
+  - python3 -m compileall custom_components/ha_weather_provider
+  - python3 -m json.tool custom_components/ha_weather_provider/manifest.json
+  - python3 -m json.tool custom_components/ha_weather_provider/strings.json
+  - python3 -m json.tool custom_components/ha_weather_provider/translations/en.json
+smoke:
+  - python3 -m compileall custom_components/ha_weather_provider
+gitlab:
+  host: git.kener.org
+  namespace: my-projects
+  project: ha-weather-provider
+  path: my-projects/ha-weather-provider
+milestones:
+  - Hourly Forecast
