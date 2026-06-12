@@ -5,35 +5,24 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from custom_components.ha_weather_provider.const import (
-    CONF_LATITUDE,
-    CONF_LONGITUDE,
-)
+from custom_components.ha_weather_provider.const import DOMAIN
 from custom_components.ha_weather_provider.weather import async_setup_entry
 
 
-async def test_async_setup_entry_uses_coordinates_for_display_name():
-    """Weather setup should build the display location from coordinates."""
+async def test_async_setup_entry_uses_coordinator_from_hass_data(hass):
+    """Weather setup should read the stored coordinator and add one entity."""
     async_add_entities = Mock()
+    coordinator = object()
     entry = SimpleNamespace(
-        data={
-            CONF_LATITUDE: 40.58,
-            CONF_LONGITUDE: -111.66,
-        }
+        title="TWC Weather 40.5800,-111.6600",
+        entry_id="abc123",
+        data={},
     )
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    await async_setup_entry(None, entry, async_add_entities)
-
-    entity = async_add_entities.call_args.args[0][0]
-    assert entity._attr_name == "Weather Provider 40.5800,-111.6600"
-
-
-async def test_async_setup_entry_falls_back_to_legacy_location():
-    """Legacy entries with only a location still create the placeholder entity."""
-    async_add_entities = Mock()
-    entry = SimpleNamespace(data={"location": "Salt Lake City"})
-
-    await async_setup_entry(None, entry, async_add_entities)
+    await async_setup_entry(hass, entry, async_add_entities)
 
     entity = async_add_entities.call_args.args[0][0]
-    assert entity._attr_name == "Weather Provider Salt Lake City"
+    assert entity.coordinator is coordinator
+    assert entity._attr_name == entry.title
+    assert entity._attr_unique_id == entry.entry_id
