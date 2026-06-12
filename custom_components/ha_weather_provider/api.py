@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import aiohttp
@@ -80,7 +81,7 @@ class TWCClient:
             ) as response:
                 self._raise_for_status(response.status)
                 payload = await response.json(content_type=None)
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise TWCRequestError("TWC request failed") from err
         except (TypeError, ValueError) as err:
             raise TWCRequestError("TWC response body was not valid JSON") from err

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from aiohttp import ClientError, ClientSession
 from aioresponses import aioresponses
@@ -135,6 +137,21 @@ async def test_async_get_current_conditions_maps_client_errors() -> None:
         client = _make_client(session)
         with aioresponses() as mocked:
             mocked.get(_request_url(f"{BASE_URL}{CURRENT_PATH}"), exception=ClientError())
+
+            with pytest.raises(TWCRequestError):
+                await client.async_get_current_conditions()
+
+
+@pytest.mark.asyncio
+async def test_async_get_current_conditions_maps_timeout_errors() -> None:
+    """aiohttp timeouts are wrapped as TWC request errors."""
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                _request_url(f"{BASE_URL}{CURRENT_PATH}"),
+                exception=asyncio.TimeoutError(),
+            )
 
             with pytest.raises(TWCRequestError):
                 await client.async_get_current_conditions()
