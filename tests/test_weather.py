@@ -26,3 +26,14 @@ async def test_async_setup_entry_uses_coordinates_for_display_name():
 
     entity = async_add_entities.call_args.args[0][0]
     assert entity._attr_name == "Weather Provider 40.5800,-111.6600"
+
+
+async def test_async_setup_entry_falls_back_to_legacy_location():
+    """Legacy entries with only a location still create the placeholder entity."""
+    async_add_entities = Mock()
+    entry = SimpleNamespace(data={"location": "Salt Lake City"})
+
+    await async_setup_entry(None, entry, async_add_entities)
+
+    entity = async_add_entities.call_args.args[0][0]
+    assert entity._attr_name == "Weather Provider Salt Lake City"

@@ -47,4 +47,4 @@ class TWCClient:
 
     async def async_get_current_conditions(self) -> dict[str, Any]:
         """Return current conditions."""
-        raise NotImplementedError
+        raise TWCRequestError("Temporary client shell is not implemented")

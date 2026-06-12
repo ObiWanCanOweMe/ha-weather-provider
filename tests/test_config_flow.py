@@ -83,3 +83,21 @@ async def test_form_rejects_bad_auth(hass):
 
     assert result["type"] == "form"
     assert result["errors"]["base"] == "invalid_auth"
+
+
+async def test_form_rejects_temporary_client_failure(hass):
+    """The temporary client shell should fail as a connection error."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+    )
+
+    assert result["type"] == "form"
+    assert result["errors"]["base"] == "cannot_connect"
