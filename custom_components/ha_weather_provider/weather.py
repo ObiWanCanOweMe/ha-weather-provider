@@ -6,14 +6,14 @@ from homeassistant.components.weather import WeatherEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_LOCATION
+from .const import CONF_LATITUDE, CONF_LONGITUDE
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ) -> None:
     """Set up the weather entity from a config entry."""
-    location = entry.data[CONF_LOCATION]
+    location = f"{entry.data[CONF_LATITUDE]:.4f},{entry.data[CONF_LONGITUDE]:.4f}"
     async_add_entities([HAWeatherProviderEntity(location)])
 
 
