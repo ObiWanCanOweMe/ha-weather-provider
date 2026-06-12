@@ -31,7 +31,7 @@ def _validate_coordinates(latitude: float, longitude: float) -> bool:
 class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for HA Weather Provider."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

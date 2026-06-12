@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -17,7 +19,31 @@ from .const import (
 )
 from .coordinator import TWCWeatherCoordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 PLATFORMS: list[str] = ["weather"]
+REQUIRED_ENTRY_KEYS = (
+    CONF_API_KEY,
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
+    CONF_UNITS,
+    CONF_LANGUAGE,
+)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate legacy config entries."""
+    missing_keys = [key for key in REQUIRED_ENTRY_KEYS if key not in entry.data]
+    if missing_keys:
+        _LOGGER.error(
+            "Cannot migrate config entry %s for %s: missing required keys %s",
+            entry.entry_id,
+            DOMAIN,
+            ", ".join(missing_keys),
+        )
+        return False
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -35,7 +61,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except Exception:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+        raise
     return True
 
 
