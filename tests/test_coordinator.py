@@ -5,9 +5,10 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.ha_weather_provider.api import TWCRequestError
+from custom_components.ha_weather_provider.api import TWCAuthError, TWCRequestError
 from custom_components.ha_weather_provider.coordinator import (
     TWCWeatherCoordinator,
     TWCWeatherData,
@@ -38,4 +39,15 @@ async def test_coordinator_wraps_client_errors(hass) -> None:
     coordinator = TWCWeatherCoordinator(hass, client)
 
     with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+
+@pytest.mark.asyncio
+async def test_coordinator_raises_auth_failed_for_auth_errors(hass) -> None:
+    """Coordinator should surface credential failures as config entry auth failures."""
+    client = AsyncMock()
+    client.async_get_current_conditions.side_effect = TWCAuthError("bad key")
+    coordinator = TWCWeatherCoordinator(hass, client)
+
+    with pytest.raises(ConfigEntryAuthFailed):
         await coordinator._async_update_data()

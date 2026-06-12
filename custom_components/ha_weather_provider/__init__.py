@@ -43,6 +43,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         return False
 
+    hass.config_entries.async_update_entry(entry, version=2)
     return True
 
 

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_weather_provider import async_migrate_entry, async_setup_entry, async_unload_entry
 from custom_components.ha_weather_provider.const import (
@@ -31,6 +32,28 @@ async def test_async_migrate_entry_rejects_legacy_location_only_entry(hass, capl
     assert result is False
     assert "missing required keys" in caplog.text
     assert DOMAIN in caplog.text
+
+
+async def test_async_migrate_entry_updates_valid_entry_version(hass):
+    """Valid entries should be marked as migrated to version 2."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        version=1,
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == 2
 
 
 @pytest.mark.asyncio

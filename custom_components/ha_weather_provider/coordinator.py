@@ -7,12 +7,13 @@ import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 
-from .api import TWCClient, TWCError
+from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,6 +45,8 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         try:
             current = await self.client.async_get_current_conditions()
             daily_forecast = await self.client.async_get_daily_forecast()
+        except (TWCAuthError, TWCPermissionError) as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
         except TWCError as err:
             raise UpdateFailed(str(err)) from err
 
