@@ -106,6 +106,19 @@ async def test_async_get_daily_forecast_calls_twc_daily_forecast_endpoint() -> N
 
 
 @pytest.mark.asyncio
+async def test_async_get_daily_forecast_maps_http_status_errors() -> None:
+    """Daily forecast errors use the same request failure mapping."""
+    url = f"{BASE_URL}{DAILY_FORECAST_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url), status=503)
+
+            with pytest.raises(TWCRequestError):
+                await client.async_get_daily_forecast()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("status", "error_type"),
     [

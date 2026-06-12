@@ -109,29 +109,3 @@ async def test_form_rejects_request_error(hass):
 
     assert result["type"] == "form"
     assert result["errors"]["base"] == "cannot_connect"
-
-
-async def test_form_rejects_timeout_error(hass):
-    """Timeout-shaped request failures surface as connection errors."""
-    from custom_components.ha_weather_provider.api import TWCRequestError
-
-    with patch("custom_components.ha_weather_provider.config_flow.TWCClient") as mock:
-        client = mock.return_value
-        client.async_get_current_conditions = AsyncMock(
-            side_effect=TWCRequestError("timeout")
-        )
-
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_USER},
-            data={
-                CONF_API_KEY: "secret",
-                CONF_LATITUDE: 40.58,
-                CONF_LONGITUDE: -111.66,
-                CONF_UNITS: "e",
-                CONF_LANGUAGE: "en-US",
-            },
-        )
-
-    assert result["type"] == "form"
-    assert result["errors"]["base"] == "cannot_connect"
