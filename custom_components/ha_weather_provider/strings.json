@@ -3,12 +3,22 @@
     "step": {
       "user": {
         "title": "HA Weather Provider",
-        "description": "Set up your weather provider credentials.",
+        "description": "Set up The Weather Company weather data.",
         "data": {
           "api_key": "API Key",
-          "location": "Location"
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "units": "Units",
+          "language": "Language"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to The Weather Company API.",
+      "invalid_auth": "The API key was rejected.",
+      "not_authorized": "The API key is not authorized for this Weather Company endpoint.",
+      "invalid_coordinates": "Latitude or longitude is outside the supported range.",
+      "invalid_units": "The selected unit system is not supported."
     }
   }
 }
