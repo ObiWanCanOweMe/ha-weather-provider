@@ -24,5 +24,18 @@
       "invalid_coordinates": "Latitude or longitude is outside the supported range.",
       "invalid_units": "The selected unit system is not supported."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "extra_entities": "Create optional extra entities"
+        },
+        "data_description": {
+          "extra_entities": "Adds companion diagnostic sensors for alert count, condition phrase, observation time, integration version, and wind gust."
+        }
+      }
+    }
   }
 }

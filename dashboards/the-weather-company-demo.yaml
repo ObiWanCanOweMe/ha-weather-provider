@@ -85,7 +85,7 @@ cards:
           | Dew point | {{ dew_point ~ '°' if dew_point is not none else 'Unavailable' }} |
           | Cloud cover | {{ cloud_coverage ~ '%' if cloud_coverage is not none else 'Unavailable' }} |
           | UV index | {{ uv_index if uv_index is not none else 'Unavailable' }} |
-          | Wind gust | {{ wind_gust ~ ' ' ~ wind_speed_unit if wind_gust is not none else 'Unavailable' }} |
+          | Wind gust | {{ wind_gust ~ ' ' ~ wind_speed_unit if wind_gust is not none else 'No gust reported' }} |
 
   - type: markdown
     title: Active Alerts
@@ -115,7 +115,7 @@ cards:
       | 2-day hourly forecast | Shipped |
       | 7-day daily forecast | Shipped |
       | Weather alerts | Shipped |
-      | Optional extra weather entities | Planned milestone |
+      | Optional extra weather entities | Shipped |
 
   - type: grid
     title: Forecast Demo
@@ -142,5 +142,3 @@ cards:
       Daily forecast rows are enriched by the integration where Home Assistant supports the fields:
       high and low temperature, condition, precipitation chance, precipitation amount,
       wind, humidity, cloud cover, apparent temperature, and UV index.
-
-      Planned milestones are intentionally shown as roadmap labels only.

@@ -5,9 +5,11 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
+    CONF_EXTRA_ENTITIES,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
@@ -218,3 +220,33 @@ async def test_form_rejects_request_error(hass):
     client.async_get_daily_forecast.assert_not_called()
     client.async_get_hourly_forecast.assert_not_called()
     client.async_get_alert_headlines.assert_not_called()
+
+
+async def test_options_flow_configures_optional_extra_entities(hass):
+    """Options flow should allow companion diagnostic sensors to be enabled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_EXTRA_ENTITIES: False},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "init"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={CONF_EXTRA_ENTITIES: True},
+    )
+
+    assert result["type"] == "create_entry"
+    assert result["data"] == {CONF_EXTRA_ENTITIES: True}

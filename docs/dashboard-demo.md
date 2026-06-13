@@ -31,13 +31,16 @@ The card is designed for demos and screenshots. It shows:
 - Atmosphere values: humidity, pressure, visibility, and wind.
 - Comfort and sky values: dew point, cloud cover, UV index, and wind gust.
 - Active weather alert status and alert headline summaries.
-- Integration coverage for shipped and planned features.
+- Integration coverage for shipped features.
 - Built-in hourly and daily forecast cards.
 - A note about enriched daily forecast fields.
+- Optional companion entity status.
 
-## Planned Milestones
+## Optional Entities
 
-Optional extra weather entities are shown as planned milestone labels only.
+Optional extra weather entities can be enabled from the integration options. The
+first optional set adds companion diagnostic sensors for alert count, condition
+phrase, observation time, integration version, and wind gust.
 
 ## Fallback Behavior
 

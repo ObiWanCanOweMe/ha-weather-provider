@@ -20,6 +20,7 @@ CONF_LANGUAGE = "language"
 CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"
 CONF_UNITS = "units"
+CONF_EXTRA_ENTITIES = "extra_entities"
 
 DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
