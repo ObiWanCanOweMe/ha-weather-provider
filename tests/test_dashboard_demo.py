@@ -63,9 +63,8 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     """Roadmap features must not look like live alert or sensor data."""
     yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8").lower()
 
-    assert "weather alerts" in yaml_text
-    assert "optional extra weather entities" in yaml_text
-    assert "planned" in yaml_text
+    assert "| weather alerts | planned milestone |" in yaml_text
+    assert "| optional extra weather entities | planned milestone |" in yaml_text
 
 
 def test_demo_dashboard_markdown_tables_preserve_row_newlines() -> None:

@@ -32,7 +32,7 @@
 - Create: `tests/test_dashboard_demo.py`
 - Test: `tests/test_dashboard_demo.py`
 
-- [ ] **Step 1: Write failing tests for the dashboard artifact**
+- [x] **Step 1: Write failing tests for the dashboard artifact**
 
 Create `tests/test_dashboard_demo.py` with this content:
 
@@ -107,7 +107,7 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     assert "planned" in yaml_text
 ```
 
-- [ ] **Step 2: Run the new tests and verify they fail because the file is missing**
+- [x] **Step 2: Run the new tests and verify they fail because the file is missing**
 
 Run:
 
@@ -123,7 +123,7 @@ FAILED tests/test_dashboard_demo.py::test_demo_dashboard_yaml_exists_and_parses
 
 The failure should be `FileNotFoundError` for `dashboards/the-weather-company-demo.yaml`.
 
-- [ ] **Step 3: Commit the failing tests**
+- [x] **Step 3: Commit the failing tests**
 
 Run:
 
@@ -138,7 +138,7 @@ git commit -m "test: add demo dashboard validation"
 - Create: `dashboards/the-weather-company-demo.yaml`
 - Test: `tests/test_dashboard_demo.py`
 
-- [ ] **Step 1: Create the dashboard YAML**
+- [x] **Step 1: Create the dashboard YAML**
 
 Create `dashboards/the-weather-company-demo.yaml` with this content:
 
@@ -237,7 +237,7 @@ cards:
       Planned milestones are intentionally shown as roadmap labels only.
 ```
 
-- [ ] **Step 2: Run the dashboard tests and verify they pass**
+- [x] **Step 2: Run the dashboard tests and verify they pass**
 
 Run:
 
@@ -251,7 +251,7 @@ Expected:
 4 passed
 ```
 
-- [ ] **Step 3: Commit the dashboard YAML**
+- [x] **Step 3: Commit the dashboard YAML**
 
 Run:
 
