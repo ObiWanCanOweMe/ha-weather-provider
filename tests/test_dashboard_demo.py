@@ -66,3 +66,16 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     assert "weather alerts" in yaml_text
     assert "optional extra weather entities" in yaml_text
     assert "planned" in yaml_text
+
+
+def test_demo_dashboard_markdown_tables_preserve_row_newlines() -> None:
+    """Markdown table cards should keep separator rows on their own lines."""
+    cards = _walk_cards(_load_demo_card())
+    table_contents = [
+        card["content"]
+        for card in cards
+        if card.get("type") == "markdown" and "| ---" in card.get("content", "")
+    ]
+
+    assert table_contents
+    assert all("\n| ---" in content for content in table_contents)

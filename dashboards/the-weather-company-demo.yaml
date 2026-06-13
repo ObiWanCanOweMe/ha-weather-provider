@@ -2,7 +2,7 @@ type: vertical-stack
 cards:
   - type: markdown
     title: The Weather Company
-    content: >-
+    content: |-
       {% set entity = 'weather.the_weather_company' %}
       {% set condition = states(entity) %}
       {% set temp = state_attr(entity, 'temperature') %}
@@ -29,7 +29,7 @@ cards:
     square: false
     cards:
       - type: markdown
-        content: >-
+        content: |-
           {% set entity = 'weather.the_weather_company' %}
           ### Atmosphere
 
@@ -41,7 +41,7 @@ cards:
           | Wind | {{ state_attr(entity, 'wind_speed') if state_attr(entity, 'wind_speed') is not none else 'Unavailable' }} {{ state_attr(entity, 'wind_speed_unit') or '' }} · {{ state_attr(entity, 'wind_bearing') if state_attr(entity, 'wind_bearing') is not none else 'Unavailable' }} |
 
       - type: markdown
-        content: >-
+        content: |-
           {% set entity = 'weather.the_weather_company' %}
           ### Comfort & Sky
 
@@ -54,7 +54,7 @@ cards:
 
   - type: markdown
     title: Integration Coverage
-    content: >-
+    content: |-
       | Capability | Status |
       | --- | --- |
       | Current conditions | Shipped |
@@ -84,7 +84,7 @@ cards:
 
   - type: markdown
     title: Daily Enrichment
-    content: >-
+    content: |-
       Daily forecast rows are enriched by the integration where Home Assistant supports the fields:
       high and low temperature, condition, precipitation chance, precipitation amount,
       wind, humidity, cloud cover, apparent temperature, and UV index.
