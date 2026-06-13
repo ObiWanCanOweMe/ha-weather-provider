@@ -8,8 +8,13 @@ from unittest.mock import Mock
 import pytest
 
 from homeassistant.components.weather import WeatherEntityFeature
+from homeassistant.const import UnitOfPressure
 
-from custom_components.ha_weather_provider.const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
+from custom_components.ha_weather_provider.const import (
+    CONF_UNITS,
+    DOMAIN,
+    UNIT_SYSTEMS,
+)
 from custom_components.ha_weather_provider.coordinator import TWCWeatherData
 from custom_components.ha_weather_provider.weather import HAWeatherProviderEntity, async_setup_entry
 
@@ -29,12 +34,14 @@ def _entity(
                 "temperature": 72,
                 "temperatureFeelsLike": 73,
                 "relativeHumidity": 54,
-                "pressureMeanSeaLevel": 30.12,
+                "pressureMeanSeaLevel": 1014.7,
                 "windSpeed": 7,
                 "windGust": 12,
                 "windDirection": 220,
                 "visibility": 10,
                 "uvIndex": 6,
+                "temperatureDewPoint": 55,
+                "cloudCover": 41,
                 "wxPhraseLong": "Partly Cloudy",
                 "iconCode": 30,
             },
@@ -60,7 +67,7 @@ def _entity(
                 "temperature": [72],
                 "temperatureFeelsLike": [73],
                 "relativeHumidity": [54],
-                "pressureMeanSeaLevel": [30.12],
+                "pressureMeanSeaLevel": [1014.7],
                 "wxPhraseLong": ["Partly Cloudy"],
                 "iconCode": [30],
                 "precipChance": [15],
@@ -100,6 +107,7 @@ async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
     assert entity.coordinator is coordinator
     assert entity._attr_name == "The Weather Company"
     assert entity._attr_unique_id == entry.entry_id
+    assert entity.entity_id == "weather.twc"
 
 
 def test_current_properties_map_twc_data() -> None:
@@ -112,12 +120,15 @@ def test_current_properties_map_twc_data() -> None:
     assert entity.native_temperature == 72
     assert entity.native_apparent_temperature == 73
     assert entity.humidity == 54
-    assert entity.native_pressure == 30.12
+    assert entity.native_pressure == 1014.7
+    assert entity.native_pressure_unit == UnitOfPressure.HPA
     assert entity.native_wind_speed == 7
     assert entity.native_wind_gust_speed == 12
     assert entity.wind_bearing == 220
     assert entity.native_visibility == 10
     assert entity.uv_index == 6
+    assert entity.native_dew_point == 55
+    assert entity.cloud_coverage == 41
     assert entity.condition == "partlycloudy"
     assert entity.native_temperature_unit == UNIT_SYSTEMS["e"]["temperature"]
 
@@ -133,7 +144,7 @@ async def test_hourly_forecast_maps_twc_data() -> None:
             "native_temperature": 72,
             "native_apparent_temperature": 73,
             "humidity": 54,
-            "native_pressure": 30.12,
+            "native_pressure": 1014.7,
             "precipitation_probability": 15,
             "native_precipitation": 0.02,
             "native_wind_speed": 8,
@@ -153,7 +164,7 @@ async def test_hourly_forecast_skips_invalid_valid_time_entries() -> None:
             "temperature": [70, 71, 72],
             "temperatureFeelsLike": [71, 72, 73],
             "relativeHumidity": [52, 53, 54],
-            "pressureMeanSeaLevel": [30.1, 30.11, 30.12],
+            "pressureMeanSeaLevel": [1014.5, 1014.6, 1014.7],
             "wxPhraseLong": ["Clear", "Clear", "Partly Cloudy"],
             "iconCode": [31, 31, 30],
             "precipChance": [0, 5, 15],
@@ -173,7 +184,7 @@ async def test_hourly_forecast_skips_invalid_valid_time_entries() -> None:
             "native_temperature": 72,
             "native_apparent_temperature": 73,
             "humidity": 54,
-            "native_pressure": 30.12,
+            "native_pressure": 1014.7,
             "precipitation_probability": 15,
             "native_precipitation": 0.02,
             "native_wind_speed": 8,

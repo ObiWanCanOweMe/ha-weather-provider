@@ -10,9 +10,9 @@ Demo YAML:
 
 The card expects this weather entity:
 
-- `weather.the_weather_company`
+- `weather.twc`
 
-If Home Assistant created a different entity id, replace every `weather.the_weather_company` reference in the YAML with the actual entity id before adding the card to a dashboard.
+If Home Assistant created a different entity id, replace every `weather.twc` reference in the YAML with the actual entity id before adding the card to a dashboard.
 
 ## How To Add It
 
