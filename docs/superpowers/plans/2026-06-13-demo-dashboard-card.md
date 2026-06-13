@@ -362,7 +362,7 @@ git commit -m "docs: document demo dashboard card"
 - Read: `dashboards/the-weather-company-demo.yaml`
 - Read: `docs/testing.md`
 
-- [ ] **Step 1: Confirm the HA container is running**
+- [x] **Step 1: Confirm the HA container is running**
 
 Run:
 
@@ -378,7 +378,7 @@ ha-weather-provider-test Up ... 0.0.0.0:8123->8123/tcp
 
 If it is not running, start it using the repo's documented HA test container workflow before continuing.
 
-- [ ] **Step 2: Confirm the weather entity id**
+- [x] **Step 2: Confirm the weather entity id**
 
 Open Home Assistant at:
 
@@ -422,7 +422,7 @@ Use browser responsive tools or resize the browser:
 - Desktop width: all sections should be readable with no overlap.
 - Narrow width: grid cards should wrap or stack without text clipping.
 
-- [ ] **Step 5: Capture any runtime incompatibility**
+- [x] **Step 5: Capture any runtime incompatibility**
 
 If a built-in card option is unsupported by the installed Home Assistant version, adjust `dashboards/the-weather-company-demo.yaml` to the smallest compatible built-in-card alternative and rerun:
 
@@ -436,6 +436,13 @@ Then commit the compatibility fix:
 git add dashboards/the-weather-company-demo.yaml tests/test_dashboard_demo.py
 git commit -m "fix: make demo dashboard compatible with HA card schema"
 ```
+
+Runtime note: automated verification confirmed the HA container was running, the
+`weather.the_weather_company` entity existed, the expected current attributes
+were present through the HA REST API, and the YAML parsed with hourly/daily
+forecast cards and preserved markdown table newlines. Browser access was not
+available in this Codex session, so the manual paste/render and responsive
+layout checks remain manual follow-up steps.
 
 ## Task 5: Full Verification And MR
 
