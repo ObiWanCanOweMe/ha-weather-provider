@@ -166,6 +166,11 @@ def _series_value(data: dict[str, Any], key: str, index: int) -> Any:
     return None if value == "" else value
 
 
+def _first_non_null(*values: Any) -> Any:
+    """Return the first non-null, non-empty value."""
+    return next((value for value in values if value is not None and value != ""), None)
+
+
 class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherEntity):
     """Representation of a TWC weather entity."""
 
@@ -238,6 +243,14 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
         return _value(self.current, "uvIndex")
 
     @property
+    def native_dew_point(self) -> float | None:
+        return _value(self.current, "temperatureDewPoint")
+
+    @property
+    def cloud_coverage(self) -> float | None:
+        return _value(self.current, "cloudCover")
+
+    @property
     def condition(self) -> str | None:
         return _condition(_value(self.current, "iconCode"), _value(self.current, "wxPhraseLong"))
 
@@ -265,9 +278,17 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
                 ),
                 "native_temperature": _forecast_high(data, index),
                 "native_templow": lows[index] if index < len(lows) else None,
+                "native_apparent_temperature": _first_non_null(
+                    _first_daypart_value(daypart, "temperatureHeatIndex", index),
+                    _first_daypart_value(daypart, "temperatureWindChill", index),
+                ),
+                "humidity": _first_daypart_value(daypart, "relativeHumidity", index),
+                "cloud_coverage": _first_daypart_value(daypart, "cloudCover", index),
                 "precipitation_probability": _first_daypart_value(daypart, "precipChance", index),
+                "native_precipitation": _first_daypart_value(daypart, "qpf", index),
                 "native_wind_speed": _first_daypart_value(daypart, "windSpeed", index),
                 "wind_bearing": _first_daypart_value(daypart, "windDirection", index),
+                "uv_index": _first_daypart_value(daypart, "uvIndex", index),
             }
             forecasts.append({key: value for key, value in forecast.items() if value is not None})
 
