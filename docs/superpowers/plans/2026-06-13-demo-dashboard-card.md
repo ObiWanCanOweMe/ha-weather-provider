@@ -511,7 +511,7 @@ Expected:
 
 No uncommitted files should remain.
 
-- [ ] **Step 5: Push and open a GitLab MR**
+- [x] **Step 5: Push and open a GitLab MR**
 
 Run:
 
