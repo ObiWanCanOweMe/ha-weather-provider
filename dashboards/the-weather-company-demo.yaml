@@ -1,0 +1,93 @@
+# Demo card usage: docs/dashboard-demo.md
+type: vertical-stack
+cards:
+  - type: markdown
+    title: The Weather Company
+    content: |-
+      {% set entity = 'weather.the_weather_company' %}
+      {% set condition = states(entity) %}
+      {% set temp = state_attr(entity, 'temperature') %}
+      {% set apparent = state_attr(entity, 'apparent_temperature') %}
+      {% set attribution = state_attr(entity, 'attribution') %}
+
+      # {{ temp if temp is not none else '--' }}° {{ condition | replace('_', ' ') | title }}
+
+      **The Weather Company** weather entity is live as `{{ entity }}`.
+
+      {% if apparent is not none %}
+      Feels like **{{ apparent }}°**.
+      {% endif %}
+
+      {% if attribution %}
+      {{ attribution }}
+      {% endif %}
+
+      <ha-alert alert-type="success">API live · Current conditions · 2-day hourly · 7-day daily</ha-alert>
+
+  - type: grid
+    title: Current Conditions
+    columns: 2
+    square: false
+    cards:
+      - type: markdown
+        content: |-
+          {% set entity = 'weather.the_weather_company' %}
+          ### Atmosphere
+
+          | Metric | Value |
+          | --- | ---: |
+          | Humidity | {{ state_attr(entity, 'humidity') if state_attr(entity, 'humidity') is not none else 'Unavailable' }}% |
+          | Pressure | {{ state_attr(entity, 'pressure') if state_attr(entity, 'pressure') is not none else 'Unavailable' }} {{ state_attr(entity, 'pressure_unit') or '' }} |
+          | Visibility | {{ state_attr(entity, 'visibility') if state_attr(entity, 'visibility') is not none else 'Unavailable' }} {{ state_attr(entity, 'visibility_unit') or '' }} |
+          | Wind | {{ state_attr(entity, 'wind_speed') if state_attr(entity, 'wind_speed') is not none else 'Unavailable' }} {{ state_attr(entity, 'wind_speed_unit') or '' }} · {{ state_attr(entity, 'wind_bearing') if state_attr(entity, 'wind_bearing') is not none else 'Unavailable' }} |
+
+      - type: markdown
+        content: |-
+          {% set entity = 'weather.the_weather_company' %}
+          ### Comfort & Sky
+
+          | Metric | Value |
+          | --- | ---: |
+          | Dew point | {{ state_attr(entity, 'dew_point') if state_attr(entity, 'dew_point') is not none else 'Unavailable' }}° |
+          | Cloud cover | {{ state_attr(entity, 'cloud_coverage') if state_attr(entity, 'cloud_coverage') is not none else 'Unavailable' }}% |
+          | UV index | {{ state_attr(entity, 'uv_index') if state_attr(entity, 'uv_index') is not none else 'Unavailable' }} |
+          | Wind gust | {{ state_attr(entity, 'wind_gust_speed') if state_attr(entity, 'wind_gust_speed') is not none else 'Unavailable' }} {{ state_attr(entity, 'wind_speed_unit') or '' }} |
+
+  - type: markdown
+    title: Integration Coverage
+    content: |-
+      | Capability | Status |
+      | --- | --- |
+      | Current conditions | Shipped |
+      | 2-day hourly forecast | Shipped |
+      | 7-day daily forecast | Shipped |
+      | Weather alerts | Planned milestone |
+      | Optional extra weather entities | Planned milestone |
+
+  - type: grid
+    title: Forecast Demo
+    columns: 2
+    square: false
+    cards:
+      - type: weather-forecast
+        entity: weather.the_weather_company
+        name: Hourly Forecast
+        forecast_type: hourly
+        show_current: false
+        show_forecast: true
+
+      - type: weather-forecast
+        entity: weather.the_weather_company
+        name: Daily Forecast
+        forecast_type: daily
+        show_current: false
+        show_forecast: true
+
+  - type: markdown
+    title: Daily Enrichment
+    content: |-
+      Daily forecast rows are enriched by the integration where Home Assistant supports the fields:
+      high and low temperature, condition, precipitation chance, precipitation amount,
+      wind, humidity, cloud cover, apparent temperature, and UV index.
+
+      Planned milestones are intentionally shown as roadmap labels only.
