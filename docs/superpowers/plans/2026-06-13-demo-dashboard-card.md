@@ -267,7 +267,7 @@ git commit -m "docs: add Weather Company demo dashboard card"
 - Modify: `dashboards/the-weather-company-demo.yaml`
 - Test: `tests/test_dashboard_demo.py`
 
-- [ ] **Step 1: Create usage documentation**
+- [x] **Step 1: Create usage documentation**
 
 Create `docs/dashboard-demo.md` with this content:
 
@@ -317,7 +317,7 @@ Weather alerts and optional extra weather entities are shown as planned mileston
 Some values may show as `Unavailable` if the running integration version does not expose that field yet or if Home Assistant does not surface it as a Lovelace-accessible weather attribute.
 ```
 
-- [ ] **Step 2: Add a documentation link comment to the YAML**
+- [x] **Step 2: Add a documentation link comment to the YAML**
 
 At the top of `dashboards/the-weather-company-demo.yaml`, insert:
 
@@ -333,7 +333,7 @@ type: vertical-stack
 cards:
 ```
 
-- [ ] **Step 3: Run dashboard tests again**
+- [x] **Step 3: Run dashboard tests again**
 
 Run:
 
@@ -347,7 +347,7 @@ Expected:
 4 passed
 ```
 
-- [ ] **Step 4: Commit the docs**
+- [x] **Step 4: Commit the docs**
 
 Run:
 
