@@ -46,6 +46,24 @@ def test_demo_dashboard_references_weather_company_entity() -> None:
     assert "weather entity is live as `{{ entity }}`." not in yaml_text
 
 
+def test_demo_dashboard_shows_integration_release_version() -> None:
+    """Demo card should show the integration version from the weather entity."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "integration_version = state_attr(entity, 'integration_version')" in yaml_text
+    assert "Integration release" in yaml_text
+    assert "v{{ integration_version" in yaml_text
+
+
+def test_demo_dashboard_shows_alert_summary_attributes() -> None:
+    """Demo card should show active alert status from weather entity attributes."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "alert_count = state_attr(entity, 'alert_count')" in yaml_text
+    assert "alert_headlines = state_attr(entity, 'alert_headlines') or []" in yaml_text
+    assert "Active Alerts" in yaml_text
+
+
 def test_demo_dashboard_includes_hourly_and_daily_forecast_cards() -> None:
     """Demo card should showcase both hourly and daily forecast support."""
     cards = _walk_cards(_load_demo_card())
@@ -64,7 +82,7 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     """Roadmap features must not look like live alert or sensor data."""
     yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8").lower()
 
-    assert "| weather alerts | planned milestone |" in yaml_text
+    assert "| weather alerts | shipped |" in yaml_text
     assert "| optional extra weather entities | planned milestone |" in yaml_text
 
 

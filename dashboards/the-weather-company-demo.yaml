@@ -26,11 +26,14 @@ cards:
       {% set condition_label = condition_labels.get(condition, condition | replace('_', ' ') | replace('-', ' ') | title) %}
       {% set temp = state_attr(entity, 'temperature') %}
       {% set apparent = state_attr(entity, 'apparent_temperature') %}
+      {% set integration_version = state_attr(entity, 'integration_version') %}
       {% set attribution = state_attr(entity, 'attribution') %}
 
       # {{ temp if temp is not none else '--' }}° {{ condition_label }}
 
       **The Weather Company** weather entity is live as `{{ entity }}`
+
+      Integration release **v{{ integration_version if integration_version is not none else 'unknown' }}**
 
       {% if apparent is not none %}
       Feels like **{{ apparent }}°**.
@@ -85,6 +88,25 @@ cards:
           | Wind gust | {{ wind_gust ~ ' ' ~ wind_speed_unit if wind_gust is not none else 'Unavailable' }} |
 
   - type: markdown
+    title: Active Alerts
+    content: |-
+      {% set entity = 'weather.twc' %}
+      {% set alert_count = state_attr(entity, 'alert_count') %}
+      {% set alert_headlines = state_attr(entity, 'alert_headlines') or [] %}
+
+      {% if alert_count | int(0) > 0 %}
+      <ha-alert alert-type="warning">{{ alert_count }} active weather alert{{ '' if alert_count == 1 else 's' }}</ha-alert>
+
+      | Alert | Severity | Expires |
+      | --- | --- | --- |
+      {% for alert in alert_headlines %}
+      | {{ alert.headline or alert.event or 'Weather alert' }} | {{ alert.severity or 'Unknown' }} | {{ alert.expires or 'Unknown' }} |
+      {% endfor %}
+      {% else %}
+      <ha-alert alert-type="success">No active weather alerts</ha-alert>
+      {% endif %}
+
+  - type: markdown
     title: Integration Coverage
     content: |-
       | Capability | Status |
@@ -92,7 +114,7 @@ cards:
       | Current conditions | Shipped |
       | 2-day hourly forecast | Shipped |
       | 7-day daily forecast | Shipped |
-      | Weather alerts | Planned milestone |
+      | Weather alerts | Shipped |
       | Optional extra weather entities | Planned milestone |
 
   - type: grid

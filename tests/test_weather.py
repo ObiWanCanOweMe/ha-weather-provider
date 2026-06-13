@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -10,15 +12,13 @@ import pytest
 from homeassistant.components.weather import WeatherEntityFeature
 from homeassistant.const import UnitOfPressure
 
-from custom_components.ha_weather_provider.const import (
-    CONF_UNITS,
-    DOMAIN,
-    UNIT_SYSTEMS,
-)
+from custom_components.ha_weather_provider import const
+from custom_components.ha_weather_provider.const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
 from custom_components.ha_weather_provider.coordinator import TWCWeatherData
 from custom_components.ha_weather_provider.weather import HAWeatherProviderEntity, async_setup_entry
 
 _MISSING = object()
+MANIFEST_PATH = Path("custom_components/ha_weather_provider/manifest.json")
 
 
 def _entity(
@@ -26,6 +26,7 @@ def _entity(
     current: dict[str, object] | None = None,
     daily_forecast: object = _MISSING,
     hourly_forecast: object = _MISSING,
+    alert_headlines: object = _MISSING,
 ) -> HAWeatherProviderEntity:
     coordinator = SimpleNamespace(
         data=TWCWeatherData(
@@ -80,6 +81,23 @@ def _entity(
             }
             if hourly_forecast is _MISSING
             else hourly_forecast,
+            alert_headlines={
+                "alerts": [
+                    {
+                        "detailKey": "abc123",
+                        "eventDescription": "Tornado Warning",
+                        "headlineText": "Tornado Warning until 7:30 PM",
+                        "severity": "Severe",
+                        "severityCode": 1,
+                        "urgency": "Expected",
+                        "certainty": "Observed",
+                        "expireTimeLocal": "2026-06-13T19:30:00-04:00",
+                        "source": "NWS",
+                    }
+                ]
+            }
+            if alert_headlines is _MISSING
+            else alert_headlines,
         )
     )
     entry = SimpleNamespace(
@@ -131,6 +149,44 @@ def test_current_properties_map_twc_data() -> None:
     assert entity.cloud_coverage == 41
     assert entity.condition == "partlycloudy"
     assert entity.native_temperature_unit == UNIT_SYSTEMS["e"]["temperature"]
+
+
+def test_entity_exposes_manifest_integration_version() -> None:
+    """The weather entity should expose the manifest release version."""
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    entity = _entity()
+
+    assert manifest["version"] == "0.2.0"
+    assert const.INTEGRATION_VERSION == manifest["version"]
+    assert entity.extra_state_attributes["integration_version"] == manifest["version"]
+
+
+def test_entity_exposes_alert_headline_summary_attributes() -> None:
+    """The weather entity should expose compact active alert headline attributes."""
+    entity = _entity()
+
+    assert entity.extra_state_attributes["alert_count"] == 1
+    assert entity.extra_state_attributes["alert_headlines"] == [
+        {
+            "detail_key": "abc123",
+            "event": "Tornado Warning",
+            "headline": "Tornado Warning until 7:30 PM",
+            "severity": "Severe",
+            "severity_code": 1,
+            "urgency": "Expected",
+            "certainty": "Observed",
+            "expires": "2026-06-13T19:30:00-04:00",
+            "source": "NWS",
+        }
+    ]
+
+
+def test_entity_handles_empty_alert_headline_payload() -> None:
+    """No active alerts should expose an empty alert summary."""
+    entity = _entity(alert_headlines={"alerts": []})
+
+    assert entity.extra_state_attributes["alert_count"] == 0
+    assert entity.extra_state_attributes["alert_headlines"] == []
 
 
 async def test_hourly_forecast_maps_twc_data() -> None:

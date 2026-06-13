@@ -30,13 +30,14 @@ The card is designed for demos and screenshots. It shows:
 - Current condition and live API status.
 - Atmosphere values: humidity, pressure, visibility, and wind.
 - Comfort and sky values: dew point, cloud cover, UV index, and wind gust.
+- Active weather alert status and alert headline summaries.
 - Integration coverage for shipped and planned features.
 - Built-in hourly and daily forecast cards.
 - A note about enriched daily forecast fields.
 
 ## Planned Milestones
 
-Weather alerts and optional extra weather entities are shown as planned milestone labels only. They are not live alert or sensor data.
+Optional extra weather entities are shown as planned milestone labels only.
 
 ## Fallback Behavior
 

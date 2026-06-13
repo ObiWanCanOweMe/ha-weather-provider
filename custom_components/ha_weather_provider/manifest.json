@@ -1,7 +1,7 @@
 {
   "domain": "ha_weather_provider",
   "name": "HA Weather Provider",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "config_flow": true,
   "documentation": "https://git.kener.org/my-projects/ha-weather-provider",
   "requirements": [],
