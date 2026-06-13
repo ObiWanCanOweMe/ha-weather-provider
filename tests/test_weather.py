@@ -56,6 +56,12 @@ def _entity(
                         "wxPhraseLong": [None, "Partly Cloudy", "Mostly Clear"],
                         "iconCode": [None, 30, 33],
                         "precipChance": [None, 15, 5],
+                        "qpf": [None, 0.02, 0],
+                        "relativeHumidity": [None, 54, 76],
+                        "temperatureHeatIndex": [None, 80, 62],
+                        "temperatureWindChill": [None, 72, 58],
+                        "cloudCover": [None, 38, 20],
+                        "uvIndex": [None, 6, 0],
                         "windSpeed": [None, 8, 4],
                         "windDirection": [None, 210, 190],
                     }
@@ -269,9 +275,57 @@ async def test_daily_forecast_maps_twc_data() -> None:
             "condition": "partlycloudy",
             "native_temperature": 78,
             "native_templow": 61,
+            "native_apparent_temperature": 80,
+            "humidity": 54,
+            "cloud_coverage": 38,
             "precipitation_probability": 15,
+            "native_precipitation": 0.02,
             "native_wind_speed": 8,
             "wind_bearing": 210,
+            "uv_index": 6,
+        }
+    ]
+
+
+async def test_daily_forecast_apparent_temperature_falls_back_to_wind_chill() -> None:
+    """Daily forecast apparent temperature should use wind chill when heat index is missing."""
+    forecast = await _entity(
+        daily_forecast={
+            "validTimeUtc": [1718121600],
+            "temperatureMax": [48],
+            "temperatureMin": [31],
+            "daypart": [
+                {
+                    "wxPhraseLong": [None, "Cloudy", "Clear"],
+                    "iconCode": [None, 26, 31],
+                    "precipChance": [None, 20, 5],
+                    "qpf": [None, 0.01, 0],
+                    "relativeHumidity": [None, 62, 70],
+                    "temperatureHeatIndex": [None, None, None],
+                    "temperatureWindChill": [None, 42, 29],
+                    "cloudCover": [None, 88, 12],
+                    "uvIndex": [None, 2, 0],
+                    "windSpeed": [None, 11, 6],
+                    "windDirection": [None, 330, 310],
+                }
+            ],
+        }
+    ).async_forecast_daily()
+
+    assert forecast == [
+        {
+            "datetime": "2024-06-11T16:00:00+00:00",
+            "condition": "cloudy",
+            "native_temperature": 48,
+            "native_templow": 31,
+            "native_apparent_temperature": 42,
+            "humidity": 62,
+            "cloud_coverage": 88,
+            "precipitation_probability": 20,
+            "native_precipitation": 0.01,
+            "native_wind_speed": 11,
+            "wind_bearing": 330,
+            "uv_index": 2,
         }
     ]
 
