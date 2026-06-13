@@ -26,6 +26,7 @@ def _entity(
     current: dict[str, object] | None = None,
     daily_forecast: object = _MISSING,
     hourly_forecast: object = _MISSING,
+    alert_headlines: object = _MISSING,
 ) -> HAWeatherProviderEntity:
     coordinator = SimpleNamespace(
         data=TWCWeatherData(
@@ -80,6 +81,23 @@ def _entity(
             }
             if hourly_forecast is _MISSING
             else hourly_forecast,
+            alert_headlines={
+                "alerts": [
+                    {
+                        "detailKey": "abc123",
+                        "eventDescription": "Tornado Warning",
+                        "headlineText": "Tornado Warning until 7:30 PM",
+                        "severity": "Severe",
+                        "severityCode": 1,
+                        "urgency": "Expected",
+                        "certainty": "Observed",
+                        "expireTimeLocal": "2026-06-13T19:30:00-04:00",
+                        "source": "NWS",
+                    }
+                ]
+            }
+            if alert_headlines is _MISSING
+            else alert_headlines,
         )
     )
     entry = SimpleNamespace(
@@ -140,7 +158,35 @@ def test_entity_exposes_manifest_integration_version() -> None:
 
     assert manifest["version"] == "0.2.0"
     assert const.INTEGRATION_VERSION == manifest["version"]
-    assert entity.extra_state_attributes == {"integration_version": manifest["version"]}
+    assert entity.extra_state_attributes["integration_version"] == manifest["version"]
+
+
+def test_entity_exposes_alert_headline_summary_attributes() -> None:
+    """The weather entity should expose compact active alert headline attributes."""
+    entity = _entity()
+
+    assert entity.extra_state_attributes["alert_count"] == 1
+    assert entity.extra_state_attributes["alert_headlines"] == [
+        {
+            "detail_key": "abc123",
+            "event": "Tornado Warning",
+            "headline": "Tornado Warning until 7:30 PM",
+            "severity": "Severe",
+            "severity_code": 1,
+            "urgency": "Expected",
+            "certainty": "Observed",
+            "expires": "2026-06-13T19:30:00-04:00",
+            "source": "NWS",
+        }
+    ]
+
+
+def test_entity_handles_empty_alert_headline_payload() -> None:
+    """No active alerts should expose an empty alert summary."""
+    entity = _entity(alert_headlines={"alerts": []})
+
+    assert entity.extra_state_attributes["alert_count"] == 0
+    assert entity.extra_state_attributes["alert_headlines"] == []
 
 
 async def test_hourly_forecast_maps_twc_data() -> None:

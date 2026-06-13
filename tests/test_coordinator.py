@@ -22,6 +22,9 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
     client.async_get_current_conditions.return_value = {"temperature": 72}
     client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
     client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {
+        "alerts": [{"eventDescription": "Tornado Warning"}]
+    }
     coordinator = TWCWeatherCoordinator(hass, client)
 
     data = await coordinator._async_update_data()
@@ -30,6 +33,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         current={"temperature": 72},
         daily_forecast={"temperatureMax": [75]},
         hourly_forecast={"temperature": [72, 71]},
+        alert_headlines={"alerts": [{"eventDescription": "Tornado Warning"}]},
     )
 
 

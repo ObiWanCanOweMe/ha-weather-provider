@@ -12,6 +12,7 @@ BASE_URL = "https://api.weather.com"
 CURRENT_PATH = "/v3/wx/observations/current"
 DAILY_FORECAST_PATH = "/v3/wx/forecast/daily/7day"
 HOURLY_FORECAST_PATH = "/v3/wx/forecast/hourly/2day"
+ALERT_HEADLINES_PATH = "/v3/alerts/headlines"
 
 
 class TWCError(Exception):
@@ -55,7 +56,7 @@ class TWCClient:
         self._language = language
 
     @property
-    def _query_params(self) -> dict[str, str]:
+    def _weather_query_params(self) -> dict[str, str]:
         return {
             "apiKey": self._api_key,
             "geocode": f"{self._latitude},{self._longitude}",
@@ -64,24 +65,46 @@ class TWCClient:
             "format": "json",
         }
 
+    @property
+    def _alert_query_params(self) -> dict[str, str]:
+        return {
+            "apiKey": self._api_key,
+            "geocode": f"{self._latitude},{self._longitude}",
+            "language": self._language,
+            "format": "json",
+        }
+
     async def async_get_current_conditions(self) -> dict[str, Any]:
         """Return current conditions."""
-        return await self._async_get_json(CURRENT_PATH)
+        return await self._async_get_json(CURRENT_PATH, params=self._weather_query_params)
 
     async def async_get_daily_forecast(self) -> dict[str, Any]:
         """Return daily forecast data."""
-        return await self._async_get_json(DAILY_FORECAST_PATH)
+        return await self._async_get_json(
+            DAILY_FORECAST_PATH, params=self._weather_query_params
+        )
 
     async def async_get_hourly_forecast(self) -> dict[str, Any]:
         """Return hourly forecast data."""
-        return await self._async_get_json(HOURLY_FORECAST_PATH)
+        return await self._async_get_json(
+            HOURLY_FORECAST_PATH, params=self._weather_query_params
+        )
 
-    async def _async_get_json(self, path: str) -> dict[str, Any]:
+    async def async_get_alert_headlines(self) -> dict[str, Any]:
+        """Return active weather alert headlines."""
+        try:
+            return await self._async_get_json(
+                ALERT_HEADLINES_PATH, params=self._alert_query_params
+            )
+        except TWCNoDataError:
+            return {"alerts": []}
+
+    async def _async_get_json(self, path: str, *, params: dict[str, str]) -> dict[str, Any]:
         url = f"{BASE_URL}{path}"
         try:
             async with self._session.get(
                 url,
-                params=self._query_params,
+                params=params,
                 headers={"Accept-Encoding": "gzip"},
             ) as response:
                 self._raise_for_status(response.status)
