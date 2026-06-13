@@ -1,3 +1,4 @@
+# Demo card usage: docs/dashboard-demo.md
 type: vertical-stack
 cards:
   - type: markdown
