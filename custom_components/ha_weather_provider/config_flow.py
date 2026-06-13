@@ -18,6 +18,7 @@ from .const import (
     CONF_UNITS,
     DEFAULT_LANGUAGE,
     DEFAULT_UNITS,
+    DISPLAY_NAME,
     DOMAIN,
     TWC_UNITS,
 )
@@ -77,7 +78,7 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_LANGUAGE: language,
                     }
                     return self.async_create_entry(
-                        title=f"TWC Weather {latitude:.4f},{longitude:.4f}",
+                        title=DISPLAY_NAME,
                         data=data,
                     )
 

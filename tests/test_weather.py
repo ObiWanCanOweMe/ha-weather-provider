@@ -79,7 +79,7 @@ async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
 
     entity = async_add_entities.call_args.args[0][0]
     assert entity.coordinator is coordinator
-    assert entity._attr_name == entry.title
+    assert entity._attr_name == "The Weather Company"
     assert entity._attr_unique_id == entry.entry_id
 
 

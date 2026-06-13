@@ -36,7 +36,7 @@ async def test_form_creates_entry(hass):
         )
 
     assert result["type"] == "create_entry"
-    assert result["title"] == "TWC Weather 40.5800,-111.6600"
+    assert result["title"] == "The Weather Company"
     assert result["data"][CONF_API_KEY] == "secret"
     assert result["data"][CONF_LATITUDE] == 40.58
     assert result["data"][CONF_LONGITUDE] == -111.66

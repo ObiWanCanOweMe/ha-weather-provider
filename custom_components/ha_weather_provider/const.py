@@ -22,6 +22,7 @@ CONF_UNITS = "units"
 DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
 DEFAULT_UPDATE_INTERVAL = timedelta(minutes=30)
+DISPLAY_NAME = "The Weather Company"
 
 TWC_UNITS = {
     "e": "English",

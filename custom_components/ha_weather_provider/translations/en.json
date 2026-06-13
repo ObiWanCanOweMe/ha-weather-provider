@@ -10,6 +10,10 @@
           "longitude": "Longitude",
           "units": "Units",
           "language": "Language"
+        },
+        "data_description": {
+          "latitude": "Use decimal degrees. North is positive, south is negative.",
+          "longitude": "Use decimal degrees. East is positive, west is negative."
         }
       }
     },
