@@ -26,11 +26,14 @@ cards:
       {% set condition_label = condition_labels.get(condition, condition | replace('_', ' ') | replace('-', ' ') | title) %}
       {% set temp = state_attr(entity, 'temperature') %}
       {% set apparent = state_attr(entity, 'apparent_temperature') %}
+      {% set integration_version = state_attr(entity, 'integration_version') %}
       {% set attribution = state_attr(entity, 'attribution') %}
 
       # {{ temp if temp is not none else '--' }}° {{ condition_label }}
 
       **The Weather Company** weather entity is live as `{{ entity }}`
+
+      Integration release **v{{ integration_version if integration_version is not none else 'unknown' }}**
 
       {% if apparent is not none %}
       Feels like **{{ apparent }}°**.

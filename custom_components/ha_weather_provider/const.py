@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from pathlib import Path
 
 from homeassistant.const import (
     UnitOfLength,
@@ -24,6 +26,7 @@ DEFAULT_UNITS = "e"
 DEFAULT_UPDATE_INTERVAL = timedelta(minutes=30)
 DISPLAY_NAME = "The Weather Company"
 DEFAULT_ENTITY_ID = "weather.twc"
+INTEGRATION_VERSION = json.loads(Path(__file__).with_name("manifest.json").read_text())["version"]
 
 TWC_UNITS = {
     "e": "English",

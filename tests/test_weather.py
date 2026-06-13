@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -10,15 +12,13 @@ import pytest
 from homeassistant.components.weather import WeatherEntityFeature
 from homeassistant.const import UnitOfPressure
 
-from custom_components.ha_weather_provider.const import (
-    CONF_UNITS,
-    DOMAIN,
-    UNIT_SYSTEMS,
-)
+from custom_components.ha_weather_provider import const
+from custom_components.ha_weather_provider.const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
 from custom_components.ha_weather_provider.coordinator import TWCWeatherData
 from custom_components.ha_weather_provider.weather import HAWeatherProviderEntity, async_setup_entry
 
 _MISSING = object()
+MANIFEST_PATH = Path("custom_components/ha_weather_provider/manifest.json")
 
 
 def _entity(
@@ -131,6 +131,16 @@ def test_current_properties_map_twc_data() -> None:
     assert entity.cloud_coverage == 41
     assert entity.condition == "partlycloudy"
     assert entity.native_temperature_unit == UNIT_SYSTEMS["e"]["temperature"]
+
+
+def test_entity_exposes_manifest_integration_version() -> None:
+    """The weather entity should expose the manifest release version."""
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    entity = _entity()
+
+    assert manifest["version"] == "0.2.0"
+    assert const.INTEGRATION_VERSION == manifest["version"]
+    assert entity.extra_state_attributes == {"integration_version": manifest["version"]}
 
 
 async def test_hourly_forecast_maps_twc_data() -> None:
