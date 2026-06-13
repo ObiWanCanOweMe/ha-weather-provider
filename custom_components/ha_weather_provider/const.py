@@ -23,6 +23,7 @@ DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
 DEFAULT_UPDATE_INTERVAL = timedelta(minutes=30)
 DISPLAY_NAME = "The Weather Company"
+DEFAULT_ENTITY_ID = "weather.twc"
 
 TWC_UNITS = {
     "e": "English",
@@ -34,7 +35,7 @@ TWC_UNITS = {
 UNIT_SYSTEMS = {
     "e": {
         "temperature": UnitOfTemperature.FAHRENHEIT,
-        "pressure": UnitOfPressure.INHG,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.MILES_PER_HOUR,
         "precipitation": UnitOfLength.INCHES,
         "visibility": UnitOfLength.MILES,
@@ -48,14 +49,14 @@ UNIT_SYSTEMS = {
     },
     "h": {
         "temperature": UnitOfTemperature.CELSIUS,
-        "pressure": UnitOfPressure.MBAR,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.MILES_PER_HOUR,
         "precipitation": UnitOfLength.MILLIMETERS,
         "visibility": UnitOfLength.MILES,
     },
     "s": {
         "temperature": UnitOfTemperature.CELSIUS,
-        "pressure": UnitOfPressure.PA,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.METERS_PER_SECOND,
         "precipitation": UnitOfLength.MILLIMETERS,
         "visibility": UnitOfLength.METERS,

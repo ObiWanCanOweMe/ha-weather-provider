@@ -4,15 +4,33 @@ cards:
   - type: markdown
     title: The Weather Company
     content: |-
-      {% set entity = 'weather.the_weather_company' %}
+      {% set entity = 'weather.twc' %}
       {% set condition = states(entity) %}
+      {% set condition_labels = {
+        'clear-night': 'Clear Night',
+        'cloudy': 'Cloudy',
+        'exceptional': 'Exceptional',
+        'fog': 'Fog',
+        'hail': 'Hail',
+        'lightning': 'Lightning',
+        'lightning-rainy': 'Thunderstorms',
+        'partlycloudy': 'Partly Cloudy',
+        'pouring': 'Pouring',
+        'rainy': 'Rainy',
+        'snowy': 'Snowy',
+        'snowy-rainy': 'Wintry Mix',
+        'sunny': 'Sunny',
+        'windy': 'Windy',
+        'windy-variant': 'Windy'
+      } %}
+      {% set condition_label = condition_labels.get(condition, condition | replace('_', ' ') | replace('-', ' ') | title) %}
       {% set temp = state_attr(entity, 'temperature') %}
       {% set apparent = state_attr(entity, 'apparent_temperature') %}
       {% set attribution = state_attr(entity, 'attribution') %}
 
-      # {{ temp if temp is not none else '--' }}° {{ condition | replace('_', ' ') | title }}
+      # {{ temp if temp is not none else '--' }}° {{ condition_label }}
 
-      **The Weather Company** weather entity is live as `{{ entity }}`.
+      **The Weather Company** weather entity is live as `{{ entity }}`
 
       {% if apparent is not none %}
       Feels like **{{ apparent }}°**.
@@ -26,32 +44,45 @@ cards:
 
   - type: grid
     title: Current Conditions
-    columns: 2
+    columns: 1
     square: false
     cards:
       - type: markdown
         content: |-
-          {% set entity = 'weather.the_weather_company' %}
+          {% set entity = 'weather.twc' %}
+          {% set humidity = state_attr(entity, 'humidity') %}
+          {% set pressure = state_attr(entity, 'pressure') %}
+          {% set pressure_unit = state_attr(entity, 'pressure_unit') or '' %}
+          {% set visibility = state_attr(entity, 'visibility') %}
+          {% set visibility_unit = state_attr(entity, 'visibility_unit') or '' %}
+          {% set wind_speed = state_attr(entity, 'wind_speed') %}
+          {% set wind_speed_unit = state_attr(entity, 'wind_speed_unit') or '' %}
+          {% set wind_bearing = state_attr(entity, 'wind_bearing') %}
           ### Atmosphere
 
           | Metric | Value |
           | --- | ---: |
-          | Humidity | {{ state_attr(entity, 'humidity') if state_attr(entity, 'humidity') is not none else 'Unavailable' }}% |
-          | Pressure | {{ state_attr(entity, 'pressure') if state_attr(entity, 'pressure') is not none else 'Unavailable' }} {{ state_attr(entity, 'pressure_unit') or '' }} |
-          | Visibility | {{ state_attr(entity, 'visibility') if state_attr(entity, 'visibility') is not none else 'Unavailable' }} {{ state_attr(entity, 'visibility_unit') or '' }} |
-          | Wind | {{ state_attr(entity, 'wind_speed') if state_attr(entity, 'wind_speed') is not none else 'Unavailable' }} {{ state_attr(entity, 'wind_speed_unit') or '' }} · {{ state_attr(entity, 'wind_bearing') if state_attr(entity, 'wind_bearing') is not none else 'Unavailable' }} |
+          | Humidity | {{ humidity ~ '%' if humidity is not none else 'Unavailable' }} |
+          | Pressure | {{ pressure ~ ' ' ~ pressure_unit if pressure is not none else 'Unavailable' }} |
+          | Visibility | {{ visibility ~ ' ' ~ visibility_unit if visibility is not none else 'Unavailable' }} |
+          | Wind | {{ wind_speed ~ ' ' ~ wind_speed_unit if wind_speed is not none else 'Unavailable' }} · {{ wind_bearing if wind_bearing is not none else 'Unavailable' }} |
 
       - type: markdown
         content: |-
-          {% set entity = 'weather.the_weather_company' %}
+          {% set entity = 'weather.twc' %}
+          {% set dew_point = state_attr(entity, 'dew_point') %}
+          {% set cloud_coverage = state_attr(entity, 'cloud_coverage') %}
+          {% set uv_index = state_attr(entity, 'uv_index') %}
+          {% set wind_gust = state_attr(entity, 'wind_gust_speed') %}
+          {% set wind_speed_unit = state_attr(entity, 'wind_speed_unit') or '' %}
           ### Comfort & Sky
 
           | Metric | Value |
           | --- | ---: |
-          | Dew point | {{ state_attr(entity, 'dew_point') if state_attr(entity, 'dew_point') is not none else 'Unavailable' }}° |
-          | Cloud cover | {{ state_attr(entity, 'cloud_coverage') if state_attr(entity, 'cloud_coverage') is not none else 'Unavailable' }}% |
-          | UV index | {{ state_attr(entity, 'uv_index') if state_attr(entity, 'uv_index') is not none else 'Unavailable' }} |
-          | Wind gust | {{ state_attr(entity, 'wind_gust_speed') if state_attr(entity, 'wind_gust_speed') is not none else 'Unavailable' }} {{ state_attr(entity, 'wind_speed_unit') or '' }} |
+          | Dew point | {{ dew_point ~ '°' if dew_point is not none else 'Unavailable' }} |
+          | Cloud cover | {{ cloud_coverage ~ '%' if cloud_coverage is not none else 'Unavailable' }} |
+          | UV index | {{ uv_index if uv_index is not none else 'Unavailable' }} |
+          | Wind gust | {{ wind_gust ~ ' ' ~ wind_speed_unit if wind_gust is not none else 'Unavailable' }} |
 
   - type: markdown
     title: Integration Coverage
@@ -66,18 +97,18 @@ cards:
 
   - type: grid
     title: Forecast Demo
-    columns: 2
+    columns: 1
     square: false
     cards:
       - type: weather-forecast
-        entity: weather.the_weather_company
+        entity: weather.twc
         name: Hourly Forecast
         forecast_type: hourly
         show_current: false
         show_forecast: true
 
       - type: weather-forecast
-        entity: weather.the_weather_company
+        entity: weather.twc
         name: Daily Forecast
         forecast_type: daily
         show_current: false

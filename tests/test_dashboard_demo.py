@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 
 DEMO_CARD_PATH = Path("dashboards/the-weather-company-demo.yaml")
-WEATHER_ENTITY_ID = "weather.the_weather_company"
+WEATHER_ENTITY_ID = "weather.twc"
 
 
 def _load_demo_card() -> dict[str, Any]:
@@ -43,6 +43,7 @@ def test_demo_dashboard_references_weather_company_entity() -> None:
     yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
 
     assert WEATHER_ENTITY_ID in yaml_text
+    assert "weather entity is live as `{{ entity }}`." not in yaml_text
 
 
 def test_demo_dashboard_includes_hourly_and_daily_forecast_cards() -> None:
@@ -65,6 +66,32 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
 
     assert "| weather alerts | planned milestone |" in yaml_text
     assert "| optional extra weather entities | planned milestone |" in yaml_text
+
+
+def test_demo_dashboard_formats_home_assistant_conditions_for_display() -> None:
+    """Known Home Assistant weather conditions should display as readable labels."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "'partlycloudy': 'Partly Cloudy'" in yaml_text
+    assert "condition | replace('_', ' ') | title" not in yaml_text
+
+
+def test_demo_dashboard_stacks_dense_sections() -> None:
+    """Current metrics and forecasts should not use cramped two-column grids."""
+    grids = [card for card in _walk_cards(_load_demo_card()) if card.get("type") == "grid"]
+    grids_by_title = {grid.get("title"): grid for grid in grids}
+
+    assert grids_by_title["Current Conditions"]["columns"] == 1
+    assert grids_by_title["Forecast Demo"]["columns"] == 1
+
+
+def test_demo_dashboard_does_not_append_units_to_unavailable_values() -> None:
+    """Unavailable values should not render with dangling units."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "else 'Unavailable' }}%" not in yaml_text
+    assert "else 'Unavailable' }}°" not in yaml_text
+    assert "else 'Unavailable' }} {{ state_attr" not in yaml_text
 
 
 def test_demo_dashboard_markdown_tables_preserve_row_newlines() -> None:

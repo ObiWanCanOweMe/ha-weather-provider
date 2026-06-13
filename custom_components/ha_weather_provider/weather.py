@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_UNITS, DISPLAY_NAME, DOMAIN, UNIT_SYSTEMS
+from .const import CONF_UNITS, DEFAULT_ENTITY_ID, DISPLAY_NAME, DOMAIN, UNIT_SYSTEMS
 from .coordinator import TWCWeatherCoordinator
 
 CONDITION_BY_ICON = {
@@ -178,6 +178,7 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
         self._entry = entry
         self._attr_name = DISPLAY_NAME
         self._attr_unique_id = entry.entry_id
+        self.entity_id = DEFAULT_ENTITY_ID
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
 
     @property
@@ -236,6 +237,14 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
     @property
     def uv_index(self) -> float | None:
         return _value(self.current, "uvIndex")
+
+    @property
+    def native_dew_point(self) -> float | None:
+        return _value(self.current, "temperatureDewPoint")
+
+    @property
+    def cloud_coverage(self) -> int | None:
+        return _value(self.current, "cloudCover")
 
     @property
     def condition(self) -> str | None:
