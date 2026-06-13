@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 
 from homeassistant.components.weather import WeatherEntityFeature
+from homeassistant.const import UnitOfPressure
 
+from custom_components.ha_weather_provider import const
 from custom_components.ha_weather_provider.const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
 from custom_components.ha_weather_provider.coordinator import TWCWeatherData
 from custom_components.ha_weather_provider.weather import HAWeatherProviderEntity, async_setup_entry
 
 _MISSING = object()
+MANIFEST_PATH = Path("custom_components/ha_weather_provider/manifest.json")
 
 
 def _entity(
@@ -21,6 +26,7 @@ def _entity(
     current: dict[str, object] | None = None,
     daily_forecast: object = _MISSING,
     hourly_forecast: object = _MISSING,
+    alert_headlines: object = _MISSING,
 ) -> HAWeatherProviderEntity:
     coordinator = SimpleNamespace(
         data=TWCWeatherData(
@@ -29,14 +35,14 @@ def _entity(
                 "temperature": 72,
                 "temperatureFeelsLike": 73,
                 "relativeHumidity": 54,
-                "pressureMeanSeaLevel": 30.12,
+                "pressureMeanSeaLevel": 1014.7,
                 "windSpeed": 7,
                 "windGust": 12,
                 "windDirection": 220,
                 "visibility": 10,
                 "uvIndex": 6,
                 "temperatureDewPoint": 55,
-                "cloudCover": 38,
+                "cloudCover": 41,
                 "wxPhraseLong": "Partly Cloudy",
                 "iconCode": 30,
             },
@@ -68,7 +74,7 @@ def _entity(
                 "temperature": [72],
                 "temperatureFeelsLike": [73],
                 "relativeHumidity": [54],
-                "pressureMeanSeaLevel": [30.12],
+                "pressureMeanSeaLevel": [1014.7],
                 "wxPhraseLong": ["Partly Cloudy"],
                 "iconCode": [30],
                 "precipChance": [15],
@@ -81,6 +87,23 @@ def _entity(
             }
             if hourly_forecast is _MISSING
             else hourly_forecast,
+            alert_headlines={
+                "alerts": [
+                    {
+                        "detailKey": "abc123",
+                        "eventDescription": "Tornado Warning",
+                        "headlineText": "Tornado Warning until 7:30 PM",
+                        "severity": "Severe",
+                        "severityCode": 1,
+                        "urgency": "Expected",
+                        "certainty": "Observed",
+                        "expireTimeLocal": "2026-06-13T19:30:00-04:00",
+                        "source": "NWS",
+                    }
+                ]
+            }
+            if alert_headlines is _MISSING
+            else alert_headlines,
         )
     )
     entry = SimpleNamespace(
@@ -108,6 +131,7 @@ async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
     assert entity.coordinator is coordinator
     assert entity._attr_name == "The Weather Company"
     assert entity._attr_unique_id == entry.entry_id
+    assert entity.entity_id == "weather.twc"
 
 
 def test_current_properties_map_twc_data() -> None:
@@ -120,16 +144,55 @@ def test_current_properties_map_twc_data() -> None:
     assert entity.native_temperature == 72
     assert entity.native_apparent_temperature == 73
     assert entity.humidity == 54
-    assert entity.native_pressure == 30.12
+    assert entity.native_pressure == 1014.7
+    assert entity.native_pressure_unit == UnitOfPressure.HPA
     assert entity.native_wind_speed == 7
     assert entity.native_wind_gust_speed == 12
     assert entity.wind_bearing == 220
     assert entity.native_visibility == 10
     assert entity.uv_index == 6
     assert entity.native_dew_point == 55
-    assert entity.cloud_coverage == 38
+    assert entity.cloud_coverage == 41
     assert entity.condition == "partlycloudy"
     assert entity.native_temperature_unit == UNIT_SYSTEMS["e"]["temperature"]
+
+
+def test_entity_exposes_manifest_integration_version() -> None:
+    """The weather entity should expose the manifest release version."""
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    entity = _entity()
+
+    assert manifest["version"] == "0.2.0"
+    assert const.INTEGRATION_VERSION == manifest["version"]
+    assert entity.extra_state_attributes["integration_version"] == manifest["version"]
+
+
+def test_entity_exposes_alert_headline_summary_attributes() -> None:
+    """The weather entity should expose compact active alert headline attributes."""
+    entity = _entity()
+
+    assert entity.extra_state_attributes["alert_count"] == 1
+    assert entity.extra_state_attributes["alert_headlines"] == [
+        {
+            "detail_key": "abc123",
+            "event": "Tornado Warning",
+            "headline": "Tornado Warning until 7:30 PM",
+            "severity": "Severe",
+            "severity_code": 1,
+            "urgency": "Expected",
+            "certainty": "Observed",
+            "expires": "2026-06-13T19:30:00-04:00",
+            "source": "NWS",
+        }
+    ]
+
+
+def test_entity_handles_empty_alert_headline_payload() -> None:
+    """No active alerts should expose an empty alert summary."""
+    entity = _entity(alert_headlines={"alerts": []})
+
+    assert entity.extra_state_attributes["alert_count"] == 0
+    assert entity.extra_state_attributes["alert_headlines"] == []
 
 
 async def test_hourly_forecast_maps_twc_data() -> None:
@@ -143,7 +206,7 @@ async def test_hourly_forecast_maps_twc_data() -> None:
             "native_temperature": 72,
             "native_apparent_temperature": 73,
             "humidity": 54,
-            "native_pressure": 30.12,
+            "native_pressure": 1014.7,
             "precipitation_probability": 15,
             "native_precipitation": 0.02,
             "native_wind_speed": 8,
@@ -163,7 +226,7 @@ async def test_hourly_forecast_skips_invalid_valid_time_entries() -> None:
             "temperature": [70, 71, 72],
             "temperatureFeelsLike": [71, 72, 73],
             "relativeHumidity": [52, 53, 54],
-            "pressureMeanSeaLevel": [30.1, 30.11, 30.12],
+            "pressureMeanSeaLevel": [1014.5, 1014.6, 1014.7],
             "wxPhraseLong": ["Clear", "Clear", "Partly Cloudy"],
             "iconCode": [31, 31, 30],
             "precipChance": [0, 5, 15],
@@ -183,7 +246,7 @@ async def test_hourly_forecast_skips_invalid_valid_time_entries() -> None:
             "native_temperature": 72,
             "native_apparent_temperature": 73,
             "humidity": 54,
-            "native_pressure": 30.12,
+            "native_pressure": 1014.7,
             "precipitation_probability": 15,
             "native_precipitation": 0.02,
             "native_wind_speed": 8,

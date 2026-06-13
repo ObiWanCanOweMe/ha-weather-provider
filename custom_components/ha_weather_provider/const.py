@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from datetime import timedelta
+from pathlib import Path
 
 from homeassistant.const import (
     UnitOfLength,
@@ -23,6 +25,8 @@ DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
 DEFAULT_UPDATE_INTERVAL = timedelta(minutes=30)
 DISPLAY_NAME = "The Weather Company"
+DEFAULT_ENTITY_ID = "weather.twc"
+INTEGRATION_VERSION = json.loads(Path(__file__).with_name("manifest.json").read_text())["version"]
 
 TWC_UNITS = {
     "e": "English",
@@ -34,7 +38,7 @@ TWC_UNITS = {
 UNIT_SYSTEMS = {
     "e": {
         "temperature": UnitOfTemperature.FAHRENHEIT,
-        "pressure": UnitOfPressure.INHG,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.MILES_PER_HOUR,
         "precipitation": UnitOfLength.INCHES,
         "visibility": UnitOfLength.MILES,
@@ -48,14 +52,14 @@ UNIT_SYSTEMS = {
     },
     "h": {
         "temperature": UnitOfTemperature.CELSIUS,
-        "pressure": UnitOfPressure.MBAR,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.MILES_PER_HOUR,
         "precipitation": UnitOfLength.MILLIMETERS,
         "visibility": UnitOfLength.MILES,
     },
     "s": {
         "temperature": UnitOfTemperature.CELSIUS,
-        "pressure": UnitOfPressure.PA,
+        "pressure": UnitOfPressure.HPA,
         "speed": UnitOfSpeed.METERS_PER_SECOND,
         "precipitation": UnitOfLength.MILLIMETERS,
         "visibility": UnitOfLength.METERS,

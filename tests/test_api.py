@@ -9,8 +9,8 @@ from aiohttp import ClientError, ClientSession
 from aioresponses import aioresponses
 from yarl import URL
 
+from custom_components.ha_weather_provider import api
 from custom_components.ha_weather_provider.api import (
-    BASE_URL,
     CURRENT_PATH,
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
@@ -41,21 +41,21 @@ def _make_client(session: ClientSession) -> TWCClient:
     )
 
 
-def _request_url(url: str) -> str:
-    return str(
-        URL(url).with_query(
-            {
-                "apiKey": API_KEY,
-                "geocode": "40.58%2C-111.66",
-                "units": UNITS,
-                "language": LANGUAGE,
-                "format": "json",
-            }
-        )
-    )
+def _request_url(url: str, *, include_units: bool = True) -> str:
+    query = {
+        "apiKey": API_KEY,
+        "geocode": "40.58%2C-111.66",
+        "language": LANGUAGE,
+        "format": "json",
+    }
+    if include_units:
+        query["units"] = UNITS
+    return str(URL(url).with_query(query))
 
 
-def _assert_request(mocked: aioresponses, method: str, url: str) -> None:
+def _assert_request(
+    mocked: aioresponses, method: str, url: str, *, include_units: bool = True
+) -> None:
     assert len(mocked.requests) == 1
     (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
     assert actual_method == method
@@ -63,20 +63,22 @@ def _assert_request(mocked: aioresponses, method: str, url: str) -> None:
     assert actual_url.host == URL(url).host
     assert actual_url.path == URL(url).path
     request = calls[0]
-    assert request.kwargs["params"] == {
+    expected_params = {
         "apiKey": API_KEY,
         "geocode": f"{LATITUDE},{LONGITUDE}",
-        "units": UNITS,
         "language": LANGUAGE,
         "format": "json",
     }
+    if include_units:
+        expected_params["units"] = UNITS
+    assert request.kwargs["params"] == expected_params
     assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
 
 
 @pytest.mark.asyncio
 async def test_async_get_current_conditions_calls_twc_current_endpoint() -> None:
     """Current conditions call the expected endpoint and return the payload."""
-    url = f"{BASE_URL}{CURRENT_PATH}"
+    url = f"{api.BASE_URL}{CURRENT_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
@@ -91,7 +93,7 @@ async def test_async_get_current_conditions_calls_twc_current_endpoint() -> None
 @pytest.mark.asyncio
 async def test_async_get_daily_forecast_calls_twc_daily_forecast_endpoint() -> None:
     """Daily forecast call returns the payload from the expected endpoint."""
-    url = f"{BASE_URL}{DAILY_FORECAST_PATH}"
+    url = f"{api.BASE_URL}{DAILY_FORECAST_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
@@ -109,7 +111,7 @@ async def test_async_get_daily_forecast_calls_twc_daily_forecast_endpoint() -> N
 @pytest.mark.asyncio
 async def test_async_get_hourly_forecast_calls_twc_hourly_forecast_endpoint() -> None:
     """Hourly forecast call returns the payload from the expected endpoint."""
-    url = f"{BASE_URL}{HOURLY_FORECAST_PATH}"
+    url = f"{api.BASE_URL}{HOURLY_FORECAST_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
@@ -125,9 +127,40 @@ async def test_async_get_hourly_forecast_calls_twc_hourly_forecast_endpoint() ->
 
 
 @pytest.mark.asyncio
+async def test_async_get_alert_headlines_calls_twc_alert_headlines_endpoint() -> None:
+    """Alert headlines call returns the payload from the expected endpoint."""
+    url = f"{api.BASE_URL}{api.ALERT_HEADLINES_PATH}"
+    payload = {"alerts": [{"eventDescription": "Tornado Warning"}]}
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), payload=payload)
+
+            result = await client.async_get_alert_headlines()
+
+    assert result == payload
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_alert_headlines_returns_empty_alerts_for_no_data() -> None:
+    """A 204 alert headline response means there are no active alerts."""
+    url = f"{api.BASE_URL}{api.ALERT_HEADLINES_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), status=204)
+
+            result = await client.async_get_alert_headlines()
+
+    assert result == {"alerts": []}
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
 async def test_async_get_daily_forecast_maps_http_status_errors() -> None:
     """Daily forecast errors use the same request failure mapping."""
-    url = f"{BASE_URL}{DAILY_FORECAST_PATH}"
+    url = f"{api.BASE_URL}{DAILY_FORECAST_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
@@ -152,7 +185,7 @@ async def test_async_get_current_conditions_maps_http_status_errors(
     status: int, error_type: type[TWCError]
 ) -> None:
     """HTTP error responses map to the expected TWC exception types."""
-    url = f"{BASE_URL}{CURRENT_PATH}"
+    url = f"{api.BASE_URL}{CURRENT_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
@@ -168,7 +201,7 @@ async def test_async_get_current_conditions_maps_client_errors() -> None:
     async with ClientSession() as session:
         client = _make_client(session)
         with aioresponses() as mocked:
-            mocked.get(_request_url(f"{BASE_URL}{CURRENT_PATH}"), exception=ClientError())
+            mocked.get(_request_url(f"{api.BASE_URL}{CURRENT_PATH}"), exception=ClientError())
 
             with pytest.raises(TWCRequestError):
                 await client.async_get_current_conditions()
@@ -181,7 +214,7 @@ async def test_async_get_current_conditions_maps_timeout_errors() -> None:
         client = _make_client(session)
         with aioresponses() as mocked:
             mocked.get(
-                _request_url(f"{BASE_URL}{CURRENT_PATH}"),
+                _request_url(f"{api.BASE_URL}{CURRENT_PATH}"),
                 exception=asyncio.TimeoutError(),
             )
 

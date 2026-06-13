@@ -10,7 +10,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_UNITS, DISPLAY_NAME, DOMAIN, UNIT_SYSTEMS
+from .const import (
+    CONF_UNITS,
+    DEFAULT_ENTITY_ID,
+    DISPLAY_NAME,
+    DOMAIN,
+    INTEGRATION_VERSION,
+    UNIT_SYSTEMS,
+)
 from .coordinator import TWCWeatherCoordinator
 
 CONDITION_BY_ICON = {
@@ -171,6 +178,32 @@ def _first_non_null(*values: Any) -> Any:
     return next((value for value in values if value is not None and value != ""), None)
 
 
+def _alert_summaries(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return stable alert headline summaries from a TWC alert payload."""
+    alerts = data.get("alerts")
+    if not isinstance(alerts, list):
+        return []
+
+    summaries: list[dict[str, Any]] = []
+    for alert in alerts:
+        if not isinstance(alert, dict):
+            continue
+        summaries.append(
+            {
+                "detail_key": _value(alert, "detailKey"),
+                "event": _value(alert, "eventDescription"),
+                "headline": _value(alert, "headlineText"),
+                "severity": _value(alert, "severity"),
+                "severity_code": _value(alert, "severityCode"),
+                "urgency": _value(alert, "urgency"),
+                "certainty": _value(alert, "certainty"),
+                "expires": _value(alert, "expireTimeLocal"),
+                "source": _value(alert, "source"),
+            }
+        )
+    return summaries
+
+
 class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherEntity):
     """Representation of a TWC weather entity."""
 
@@ -183,12 +216,27 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
         self._entry = entry
         self._attr_name = DISPLAY_NAME
         self._attr_unique_id = entry.entry_id
+        self.entity_id = DEFAULT_ENTITY_ID
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
 
     @property
     def current(self) -> dict[str, Any]:
         """Return current TWC conditions."""
         return self.coordinator.data.current
+
+    @property
+    def alert_headlines(self) -> dict[str, Any]:
+        """Return active TWC alert headlines."""
+        return self.coordinator.data.alert_headlines
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        alert_headlines = _alert_summaries(self.alert_headlines)
+        return {
+            "integration_version": INTEGRATION_VERSION,
+            "alert_count": len(alert_headlines),
+            "alert_headlines": alert_headlines,
+        }
 
     @property
     def native_temperature(self) -> float | None:
@@ -247,7 +295,7 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
         return _value(self.current, "temperatureDewPoint")
 
     @property
-    def cloud_coverage(self) -> float | None:
+    def cloud_coverage(self) -> int | None:
         return _value(self.current, "cloudCover")
 
     @property
