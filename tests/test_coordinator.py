@@ -21,6 +21,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
     client = AsyncMock()
     client.async_get_current_conditions.return_value = {"temperature": 72}
     client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
     coordinator = TWCWeatherCoordinator(hass, client)
 
     data = await coordinator._async_update_data()
@@ -28,6 +29,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
     assert data == TWCWeatherData(
         current={"temperature": 72},
         daily_forecast={"temperatureMax": [75]},
+        hourly_forecast={"temperature": [72, 71]},
     )
 
 

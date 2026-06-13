@@ -157,10 +157,21 @@ def _series_item(series: list[Any], index: int) -> Any:
     return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
+def _series_value(data: dict[str, Any], key: str, index: int) -> Any:
+    """Return one non-empty forecast series value by index."""
+    series = _series_values(data.get(key))
+    if index >= len(series):
+        return None
+    value = series[index]
+    return None if value == "" else value
+
+
 class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherEntity):
     """Representation of a TWC weather entity."""
 
-    _attr_supported_features = WeatherEntityFeature.FORECAST_DAILY
+    _attr_supported_features = (
+        WeatherEntityFeature.FORECAST_DAILY | WeatherEntityFeature.FORECAST_HOURLY
+    )
 
     def __init__(self, coordinator: TWCWeatherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -257,6 +268,44 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
                 "precipitation_probability": _first_daypart_value(daypart, "precipChance", index),
                 "native_wind_speed": _first_daypart_value(daypart, "windSpeed", index),
                 "wind_bearing": _first_daypart_value(daypart, "windDirection", index),
+            }
+            forecasts.append({key: value for key, value in forecast.items() if value is not None})
+
+        return forecasts
+
+    async def async_forecast_hourly(self) -> list[Forecast] | None:
+        """Return the 2-day hourly forecast in native units."""
+        data = self.coordinator.data.hourly_forecast
+        if not isinstance(data, dict):
+            return []
+        valid_times = _series_values(data.get("validTimeUtc"))
+
+        forecasts: list[Forecast] = []
+        for index, valid_time in enumerate(valid_times):
+            forecast_datetime = _forecast_datetime(valid_time)
+            if forecast_datetime is None:
+                continue
+            forecast: Forecast = {
+                "datetime": forecast_datetime,
+                "condition": _condition(
+                    _series_value(data, "iconCode", index),
+                    _series_value(data, "wxPhraseLong", index),
+                ),
+                "native_temperature": _series_value(data, "temperature", index),
+                "native_apparent_temperature": _series_value(
+                    data, "temperatureFeelsLike", index
+                ),
+                "humidity": _series_value(data, "relativeHumidity", index),
+                "native_pressure": _series_value(data, "pressureMeanSeaLevel", index),
+                "precipitation_probability": _series_value(
+                    data, "precipChance", index
+                ),
+                "native_precipitation": _series_value(data, "qpf", index),
+                "native_wind_speed": _series_value(data, "windSpeed", index),
+                "native_wind_gust_speed": _series_value(data, "windGust", index),
+                "wind_bearing": _series_value(data, "windDirection", index),
+                "native_dew_point": _series_value(data, "temperatureDewPoint", index),
+                "uv_index": _series_value(data, "uvIndex", index),
             }
             forecasts.append({key: value for key, value in forecast.items() if value is not None})
 

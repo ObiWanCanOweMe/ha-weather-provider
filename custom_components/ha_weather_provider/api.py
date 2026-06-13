@@ -11,6 +11,7 @@ from aiohttp import ClientSession
 BASE_URL = "https://api.weather.com"
 CURRENT_PATH = "/v3/wx/observations/current"
 DAILY_FORECAST_PATH = "/v3/wx/forecast/daily/7day"
+HOURLY_FORECAST_PATH = "/v3/wx/forecast/hourly/2day"
 
 
 class TWCError(Exception):
@@ -70,6 +71,10 @@ class TWCClient:
     async def async_get_daily_forecast(self) -> dict[str, Any]:
         """Return daily forecast data."""
         return await self._async_get_json(DAILY_FORECAST_PATH)
+
+    async def async_get_hourly_forecast(self) -> dict[str, Any]:
+        """Return hourly forecast data."""
+        return await self._async_get_json(HOURLY_FORECAST_PATH)
 
     async def _async_get_json(self, path: str) -> dict[str, Any]:
         url = f"{BASE_URL}{path}"

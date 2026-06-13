@@ -25,6 +25,7 @@ class TWCWeatherData:
 
     current: dict[str, Any]
     daily_forecast: dict[str, Any]
+    hourly_forecast: dict[str, Any]
 
 
 class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
@@ -45,9 +46,14 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         try:
             current = await self.client.async_get_current_conditions()
             daily_forecast = await self.client.async_get_daily_forecast()
+            hourly_forecast = await self.client.async_get_hourly_forecast()
         except (TWCAuthError, TWCPermissionError) as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except TWCError as err:
             raise UpdateFailed(str(err)) from err
 
-        return TWCWeatherData(current=current, daily_forecast=daily_forecast)
+        return TWCWeatherData(
+            current=current,
+            daily_forecast=daily_forecast,
+            hourly_forecast=hourly_forecast,
+        )

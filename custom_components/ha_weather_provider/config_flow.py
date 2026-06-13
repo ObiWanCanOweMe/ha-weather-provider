@@ -63,6 +63,7 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     await client.async_get_current_conditions()
                     await client.async_get_daily_forecast()
+                    await client.async_get_hourly_forecast()
                 except TWCAuthError:
                     errors["base"] = "invalid_auth"
                 except TWCPermissionError:
