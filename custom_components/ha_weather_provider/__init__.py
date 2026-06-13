@@ -2,18 +2,71 @@
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN
+from .api import TWCClient
+from .const import (
+    CONF_API_KEY,
+    CONF_LANGUAGE,
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
+    CONF_UNITS,
+    DOMAIN,
+)
+from .coordinator import TWCWeatherCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["weather"]
+REQUIRED_ENTRY_KEYS = (
+    CONF_API_KEY,
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
+    CONF_UNITS,
+    CONF_LANGUAGE,
+)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate legacy config entries."""
+    missing_keys = [key for key in REQUIRED_ENTRY_KEYS if key not in entry.data]
+    if missing_keys:
+        _LOGGER.error(
+            "Cannot migrate config entry %s for %s: missing required keys %s",
+            entry.entry_id,
+            DOMAIN,
+            ", ".join(missing_keys),
+        )
+        return False
+
+    hass.config_entries.async_update_entry(entry, version=2)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Weather Provider from a config entry."""
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    session = async_get_clientsession(hass)
+    client = TWCClient(
+        session=session,
+        api_key=entry.data[CONF_API_KEY],
+        latitude=entry.data[CONF_LATITUDE],
+        longitude=entry.data[CONF_LONGITUDE],
+        units=entry.data[CONF_UNITS],
+        language=entry.data[CONF_LANGUAGE],
+    )
+    coordinator = TWCWeatherCoordinator(hass, client)
+    await coordinator.async_config_entry_first_refresh()
+
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except Exception:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+        raise
     return True
 
 

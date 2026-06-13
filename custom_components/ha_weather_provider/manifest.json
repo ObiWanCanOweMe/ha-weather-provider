@@ -3,7 +3,7 @@
   "name": "HA Weather Provider",
   "version": "0.1.0",
   "config_flow": true,
-  "documentation": "https://example.com/ha-weather-provider",
+  "documentation": "https://git.kener.org/my-projects/ha-weather-provider",
   "requirements": [],
   "codeowners": []
 }

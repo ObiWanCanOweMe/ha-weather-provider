@@ -4,6 +4,7 @@ checks:
   - python3 -m json.tool custom_components/ha_weather_provider/manifest.json
   - python3 -m json.tool custom_components/ha_weather_provider/strings.json
   - python3 -m json.tool custom_components/ha_weather_provider/translations/en.json
+  - python3 -m pytest
 smoke:
   - python3 -m compileall custom_components/ha_weather_provider
 gitlab:
