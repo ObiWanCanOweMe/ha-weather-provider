@@ -20,6 +20,7 @@ def _entity(
     *,
     current: dict[str, object] | None = None,
     daily_forecast: object = _MISSING,
+    hourly_forecast: object = _MISSING,
 ) -> HAWeatherProviderEntity:
     coordinator = SimpleNamespace(
         data=TWCWeatherData(
@@ -54,6 +55,24 @@ def _entity(
             }
             if daily_forecast is _MISSING
             else daily_forecast,
+            hourly_forecast={
+                "validTimeUtc": [1718121600],
+                "temperature": [72],
+                "temperatureFeelsLike": [73],
+                "relativeHumidity": [54],
+                "pressureMeanSeaLevel": [30.12],
+                "wxPhraseLong": ["Partly Cloudy"],
+                "iconCode": [30],
+                "precipChance": [15],
+                "qpf": [0.02],
+                "windSpeed": [8],
+                "windGust": [12],
+                "windDirection": [210],
+                "temperatureDewPoint": [55],
+                "uvIndex": [6],
+            }
+            if hourly_forecast is _MISSING
+            else hourly_forecast,
         )
     )
     entry = SimpleNamespace(
@@ -87,7 +106,9 @@ def test_current_properties_map_twc_data() -> None:
     """Entity exposes current TWC values in native units."""
     entity = _entity()
 
-    assert entity.supported_features == WeatherEntityFeature.FORECAST_DAILY
+    assert entity.supported_features == (
+        WeatherEntityFeature.FORECAST_DAILY | WeatherEntityFeature.FORECAST_HOURLY
+    )
     assert entity.native_temperature == 72
     assert entity.native_apparent_temperature == 73
     assert entity.humidity == 54
@@ -99,6 +120,76 @@ def test_current_properties_map_twc_data() -> None:
     assert entity.uv_index == 6
     assert entity.condition == "partlycloudy"
     assert entity.native_temperature_unit == UNIT_SYSTEMS["e"]["temperature"]
+
+
+async def test_hourly_forecast_maps_twc_data() -> None:
+    """Entity returns Home Assistant hourly forecast dictionaries."""
+    forecast = await _entity().async_forecast_hourly()
+
+    assert forecast == [
+        {
+            "datetime": "2024-06-11T16:00:00+00:00",
+            "condition": "partlycloudy",
+            "native_temperature": 72,
+            "native_apparent_temperature": 73,
+            "humidity": 54,
+            "native_pressure": 30.12,
+            "precipitation_probability": 15,
+            "native_precipitation": 0.02,
+            "native_wind_speed": 8,
+            "native_wind_gust_speed": 12,
+            "wind_bearing": 210,
+            "native_dew_point": 55,
+            "uv_index": 6,
+        }
+    ]
+
+
+async def test_hourly_forecast_skips_invalid_valid_time_entries() -> None:
+    """Malformed hourly validTimeUtc entries should be skipped without crashing."""
+    forecast = await _entity(
+        hourly_forecast={
+            "validTimeUtc": [None, "bad", 1718121600],
+            "temperature": [70, 71, 72],
+            "temperatureFeelsLike": [71, 72, 73],
+            "relativeHumidity": [52, 53, 54],
+            "pressureMeanSeaLevel": [30.1, 30.11, 30.12],
+            "wxPhraseLong": ["Clear", "Clear", "Partly Cloudy"],
+            "iconCode": [31, 31, 30],
+            "precipChance": [0, 5, 15],
+            "qpf": [0, 0.01, 0.02],
+            "windSpeed": [6, 7, 8],
+            "windGust": [10, 11, 12],
+            "windDirection": [200, 205, 210],
+            "temperatureDewPoint": [53, 54, 55],
+            "uvIndex": [4, 5, 6],
+        }
+    ).async_forecast_hourly()
+
+    assert forecast == [
+        {
+            "datetime": "2024-06-11T16:00:00+00:00",
+            "condition": "partlycloudy",
+            "native_temperature": 72,
+            "native_apparent_temperature": 73,
+            "humidity": 54,
+            "native_pressure": 30.12,
+            "precipitation_probability": 15,
+            "native_precipitation": 0.02,
+            "native_wind_speed": 8,
+            "native_wind_gust_speed": 12,
+            "wind_bearing": 210,
+            "native_dew_point": 55,
+            "uv_index": 6,
+        }
+    ]
+
+
+async def test_hourly_forecast_handles_non_dict_payload() -> None:
+    """Malformed hourly payloads should degrade to an empty forecast."""
+    forecast = await _entity(hourly_forecast=None).async_forecast_hourly()
+
+    assert forecast == []
 
 
 async def test_daily_forecast_maps_twc_data() -> None:
