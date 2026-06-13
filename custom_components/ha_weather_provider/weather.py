@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
+from .const import CONF_UNITS, DISPLAY_NAME, DOMAIN, UNIT_SYSTEMS
 from .coordinator import TWCWeatherCoordinator
 
 CONDITION_BY_ICON = {
@@ -165,7 +165,7 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
     def __init__(self, coordinator: TWCWeatherCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._entry = entry
-        self._attr_name = entry.title
+        self._attr_name = DISPLAY_NAME
         self._attr_unique_id = entry.entry_id
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
 
