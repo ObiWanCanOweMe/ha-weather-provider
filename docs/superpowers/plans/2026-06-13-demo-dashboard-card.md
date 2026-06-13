@@ -449,7 +449,7 @@ layout checks remain manual follow-up steps.
 **Files:**
 - Verify all changed files.
 
-- [ ] **Step 1: Run focused dashboard tests**
+- [x] **Step 1: Run focused dashboard tests**
 
 Run:
 
@@ -463,7 +463,7 @@ Expected:
 4 passed
 ```
 
-- [ ] **Step 2: Run the full test suite**
+- [x] **Step 2: Run the full test suite**
 
 Run:
 
@@ -479,7 +479,7 @@ Expected:
 
 The exact count may be higher if new tests have been added after this plan; there must be zero failures.
 
-- [ ] **Step 3: Run the harness project check**
+- [x] **Step 3: Run the harness project check**
 
 Run:
 
@@ -495,7 +495,7 @@ Expected:
 
 The exact count may be higher if new tests have been added after this plan; there must be zero failures.
 
-- [ ] **Step 4: Check git status**
+- [x] **Step 4: Check git status**
 
 Run:
 
