@@ -12,13 +12,19 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import TWCClient
 from .const import (
     CONF_API_KEY,
+    CONF_DAILY_FORECAST_DURATION,
+    CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_UPDATE_INTERVAL_MINUTES,
     CONF_UNITS,
+    DAILY_FORECAST_DURATIONS,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
+    HOURLY_FORECAST_DURATIONS,
     UPDATE_INTERVAL_MINUTES,
 )
 from .coordinator import TWCWeatherCoordinator
@@ -47,6 +53,20 @@ def _entry_update_interval(entry: ConfigEntry) -> timedelta:
     return timedelta(minutes=minutes)
 
 
+def _entry_forecast_duration(
+    entry: ConfigEntry,
+    option_key: str,
+    allowed_values: tuple[str, ...],
+    default_value: str,
+) -> str:
+    """Return a supported configured forecast duration."""
+    options = getattr(entry, "options", {})
+    duration = options.get(option_key, default_value)
+    if duration not in allowed_values:
+        duration = default_value
+    return duration
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate legacy config entries."""
     missing_keys = [key for key in REQUIRED_ENTRY_KEYS if key not in entry.data]
@@ -73,6 +93,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         longitude=entry.data[CONF_LONGITUDE],
         units=entry.data[CONF_UNITS],
         language=entry.data[CONF_LANGUAGE],
+        daily_forecast_duration=_entry_forecast_duration(
+            entry,
+            CONF_DAILY_FORECAST_DURATION,
+            DAILY_FORECAST_DURATIONS,
+            DEFAULT_DAILY_FORECAST_DURATION,
+        ),
+        hourly_forecast_duration=_entry_forecast_duration(
+            entry,
+            CONF_HOURLY_FORECAST_DURATION,
+            HOURLY_FORECAST_DURATIONS,
+            DEFAULT_HOURLY_FORECAST_DURATION,
+        ),
     )
     coordinator = TWCWeatherCoordinator(
         hass,
