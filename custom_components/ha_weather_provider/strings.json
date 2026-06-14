@@ -30,10 +30,12 @@
       "init": {
         "title": "Options",
         "data": {
-          "extra_entities": "Create optional extra entities"
+          "extra_entities": "Create optional extra entities",
+          "update_interval_minutes": "Update interval"
         },
         "data_description": {
-          "extra_entities": "Adds companion diagnostic sensors for alert count, condition phrase, observation time, integration version, and wind gust."
+          "extra_entities": "Adds companion diagnostic sensors for alert count, condition phrase, observation time, integration version, and wind gust.",
+          "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
         }
       }
     }

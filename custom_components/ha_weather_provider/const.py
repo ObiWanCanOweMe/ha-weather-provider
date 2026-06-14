@@ -21,13 +21,16 @@ CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"
 CONF_UNITS = "units"
 CONF_EXTRA_ENTITIES = "extra_entities"
+CONF_UPDATE_INTERVAL_MINUTES = "update_interval_minutes"
 
 DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
-DEFAULT_UPDATE_INTERVAL = timedelta(minutes=30)
+DEFAULT_UPDATE_INTERVAL_MINUTES = 30
+DEFAULT_UPDATE_INTERVAL = timedelta(minutes=DEFAULT_UPDATE_INTERVAL_MINUTES)
 DISPLAY_NAME = "The Weather Company"
 DEFAULT_ENTITY_ID = "weather.twc"
 INTEGRATION_VERSION = json.loads(Path(__file__).with_name("manifest.json").read_text())["version"]
+UPDATE_INTERVAL_MINUTES = (15, 30, 60)
 
 TWC_UNITS = {
     "e": "English",

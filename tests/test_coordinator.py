@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
@@ -35,6 +36,18 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         hourly_forecast={"temperature": [72, 71]},
         alert_headlines={"alerts": [{"eventDescription": "Tornado Warning"}]},
     )
+
+
+def test_coordinator_uses_configured_update_interval(hass) -> None:
+    """Coordinator should use the configured polling interval."""
+    client = AsyncMock()
+    coordinator = TWCWeatherCoordinator(
+        hass,
+        client,
+        update_interval=timedelta(minutes=15),
+    )
+
+    assert coordinator.update_interval == timedelta(minutes=15)
 
 
 @pytest.mark.asyncio
