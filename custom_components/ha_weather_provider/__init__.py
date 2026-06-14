@@ -21,7 +21,7 @@ from .coordinator import TWCWeatherCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["weather"]
+PLATFORMS: list[str] = ["weather", "sensor"]
 REQUIRED_ENTRY_KEYS = (
     CONF_API_KEY,
     CONF_LATITUDE,

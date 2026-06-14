@@ -83,7 +83,7 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8").lower()
 
     assert "| weather alerts | shipped |" in yaml_text
-    assert "| optional extra weather entities | planned milestone |" in yaml_text
+    assert "| optional extra weather entities | shipped |" in yaml_text
 
 
 def test_demo_dashboard_formats_home_assistant_conditions_for_display() -> None:
@@ -110,6 +110,17 @@ def test_demo_dashboard_does_not_append_units_to_unavailable_values() -> None:
     assert "else 'Unavailable' }}%" not in yaml_text
     assert "else 'Unavailable' }}°" not in yaml_text
     assert "else 'Unavailable' }} {{ state_attr" not in yaml_text
+
+
+def test_demo_dashboard_explains_missing_wind_gust() -> None:
+    """Missing gust data should read like a reported calm value, not a broken card."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "No gust reported" in yaml_text
+    assert (
+        "wind_gust ~ ' ' ~ wind_speed_unit if wind_gust is not none else 'Unavailable'"
+        not in yaml_text
+    )
 
 
 def test_demo_dashboard_markdown_tables_preserve_row_newlines() -> None:

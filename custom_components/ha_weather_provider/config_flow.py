@@ -12,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import (
     CONF_API_KEY,
+    CONF_EXTRA_ENTITIES,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
@@ -33,6 +34,13 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for HA Weather Provider."""
 
     VERSION = 2
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow for this config entry."""
+        return HAWeatherProviderOptionsFlow()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -94,3 +102,24 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+
+class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
+    """Handle HA Weather Provider options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Manage integration options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_EXTRA_ENTITIES,
+                    default=self.config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+                ): bool,
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema)
