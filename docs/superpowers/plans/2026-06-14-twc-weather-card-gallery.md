@@ -702,7 +702,7 @@ Expected: commit succeeds with only the updated plan staged.
 **Files:**
 - No file edits unless MR description changes are needed.
 
-- [ ] **Step 1: Push the branch**
+- [x] **Step 1: Push the branch**
 
 Run:
 
@@ -712,7 +712,7 @@ git push
 
 Expected: local branch pushes cleanly.
 
-- [ ] **Step 2: Open a GitLab MR if working on a feature branch**
+- [x] **Step 2: Open a GitLab MR if working on a feature branch**
 
 If the work was implemented on a feature branch, open an MR into `master`:
 
