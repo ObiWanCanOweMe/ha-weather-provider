@@ -11,27 +11,22 @@ template:
       - name: TWC Demo Temperature
         unique_id: twc_demo_temperature
         state: "{{ state_attr('weather.twc', 'temperature') }}"
-        unit_of_measurement: "°F"
 
       - name: TWC Demo Feels Like
         unique_id: twc_demo_feels_like
         state: "{{ state_attr('weather.twc', 'apparent_temperature') }}"
-        unit_of_measurement: "°F"
 
       - name: TWC Demo Humidity
         unique_id: twc_demo_humidity
         state: "{{ state_attr('weather.twc', 'humidity') }}"
-        unit_of_measurement: "%"
 
       - name: TWC Demo Pressure
         unique_id: twc_demo_pressure
         state: "{{ state_attr('weather.twc', 'pressure') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'pressure_unit') or 'hPa' }}"
 
       - name: TWC Demo Wind Speed
         unique_id: twc_demo_wind_speed
         state: "{{ state_attr('weather.twc', 'wind_speed') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'wind_speed_unit') or 'mph' }}"
 
       - name: TWC Demo Wind Bearing
         unique_id: twc_demo_wind_bearing
@@ -40,7 +35,6 @@ template:
       - name: TWC Demo Wind Gust
         unique_id: twc_demo_wind_gust
         state: "{{ state_attr('weather.twc', 'wind_gust_speed') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'wind_speed_unit') or 'mph' }}"
 
       - name: TWC Demo Alert Summary
         unique_id: twc_demo_alert_summary
