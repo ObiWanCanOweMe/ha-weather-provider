@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -14,6 +15,7 @@ from custom_components.ha_weather_provider.const import (
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
+    CONF_UPDATE_INTERVAL_MINUTES,
     CONF_UNITS,
     DOMAIN,
 )
@@ -91,6 +93,40 @@ async def test_async_setup_entry_cleans_up_on_forward_failure(hass):
     assert hass.data.get(DOMAIN, {}).get(entry.entry_id) is None
     mock_client.assert_called_once()
     mock_coordinator.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_uses_configured_update_interval(hass):
+    """Setup should pass the selected update interval into the coordinator."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_UPDATE_INTERVAL_MINUTES: 60},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["update_interval"] == timedelta(minutes=60)
 
 
 @pytest.mark.asyncio

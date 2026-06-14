@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,8 +15,11 @@ from .const import (
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
+    CONF_UPDATE_INTERVAL_MINUTES,
     CONF_UNITS,
+    DEFAULT_UPDATE_INTERVAL_MINUTES,
     DOMAIN,
+    UPDATE_INTERVAL_MINUTES,
 )
 from .coordinator import TWCWeatherCoordinator
 
@@ -29,6 +33,18 @@ REQUIRED_ENTRY_KEYS = (
     CONF_UNITS,
     CONF_LANGUAGE,
 )
+
+
+def _entry_update_interval(entry: ConfigEntry) -> timedelta:
+    """Return the configured coordinator update interval."""
+    options = getattr(entry, "options", {})
+    minutes = options.get(
+        CONF_UPDATE_INTERVAL_MINUTES,
+        DEFAULT_UPDATE_INTERVAL_MINUTES,
+    )
+    if minutes not in UPDATE_INTERVAL_MINUTES:
+        minutes = DEFAULT_UPDATE_INTERVAL_MINUTES
+    return timedelta(minutes=minutes)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -58,7 +74,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         units=entry.data[CONF_UNITS],
         language=entry.data[CONF_LANGUAGE],
     )
-    coordinator = TWCWeatherCoordinator(hass, client)
+    coordinator = TWCWeatherCoordinator(
+        hass,
+        client,
+        update_interval=_entry_update_interval(entry),
+    )
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

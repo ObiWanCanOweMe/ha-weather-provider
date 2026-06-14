@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 import logging
 from typing import Any
 
@@ -32,12 +33,18 @@ class TWCWeatherData:
 class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
     """Coordinate TWC weather data refreshes."""
 
-    def __init__(self, hass: HomeAssistant, client: TWCClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: TWCClient,
+        *,
+        update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=DEFAULT_UPDATE_INTERVAL,
+            update_interval=update_interval,
             always_update=False,
         )
         self.client = client

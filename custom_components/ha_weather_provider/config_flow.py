@@ -16,12 +16,15 @@ from .const import (
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
+    CONF_UPDATE_INTERVAL_MINUTES,
     CONF_UNITS,
     DEFAULT_LANGUAGE,
+    DEFAULT_UPDATE_INTERVAL_MINUTES,
     DEFAULT_UNITS,
     DISPLAY_NAME,
     DOMAIN,
     TWC_UNITS,
+    UPDATE_INTERVAL_MINUTES,
 )
 
 
@@ -120,6 +123,13 @@ class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
                     CONF_EXTRA_ENTITIES,
                     default=self.config_entry.options.get(CONF_EXTRA_ENTITIES, False),
                 ): bool,
+                vol.Optional(
+                    CONF_UPDATE_INTERVAL_MINUTES,
+                    default=self.config_entry.options.get(
+                        CONF_UPDATE_INTERVAL_MINUTES,
+                        DEFAULT_UPDATE_INTERVAL_MINUTES,
+                    ),
+                ): vol.In(UPDATE_INTERVAL_MINUTES),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
