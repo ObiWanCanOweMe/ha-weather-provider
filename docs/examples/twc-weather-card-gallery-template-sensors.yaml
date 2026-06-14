@@ -1,0 +1,43 @@
+# Optional Home Assistant template helpers for the TWC weather card gallery.
+# Add these to configuration.yaml or split template YAML if a custom card expects sensor entities.
+# Expected entity ids include sensor.twc_demo_condition, sensor.twc_demo_temperature,
+# sensor.twc_demo_feels_like, sensor.twc_demo_wind_speed, and sensor.twc_demo_wind_gust.
+template:
+  - sensor:
+      - name: TWC Demo Condition
+        unique_id: twc_demo_condition
+        state: "{{ states('weather.twc') }}"
+
+      - name: TWC Demo Temperature
+        unique_id: twc_demo_temperature
+        state: "{{ state_attr('weather.twc', 'temperature') }}"
+
+      - name: TWC Demo Feels Like
+        unique_id: twc_demo_feels_like
+        state: "{{ state_attr('weather.twc', 'apparent_temperature') }}"
+
+      - name: TWC Demo Humidity
+        unique_id: twc_demo_humidity
+        state: "{{ state_attr('weather.twc', 'humidity') }}"
+
+      - name: TWC Demo Pressure
+        unique_id: twc_demo_pressure
+        state: "{{ state_attr('weather.twc', 'pressure') }}"
+
+      - name: TWC Demo Wind Speed
+        unique_id: twc_demo_wind_speed
+        state: "{{ state_attr('weather.twc', 'wind_speed') }}"
+
+      - name: TWC Demo Wind Bearing
+        unique_id: twc_demo_wind_bearing
+        state: "{{ state_attr('weather.twc', 'wind_bearing') }}"
+
+      - name: TWC Demo Wind Gust
+        unique_id: twc_demo_wind_gust
+        state: "{{ state_attr('weather.twc', 'wind_gust_speed') }}"
+
+      - name: TWC Demo Alert Summary
+        unique_id: twc_demo_alert_summary
+        state: >-
+          {% set count = state_attr('weather.twc', 'alert_count') | int(0) %}
+          {{ count }} active alert{{ '' if count == 1 else 's' }}
