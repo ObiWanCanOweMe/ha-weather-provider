@@ -12,17 +12,23 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import (
     CONF_API_KEY,
+    CONF_DAILY_FORECAST_DURATION,
     CONF_EXTRA_ENTITIES,
+    CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_UPDATE_INTERVAL_MINUTES,
     CONF_UNITS,
+    DAILY_FORECAST_DURATIONS,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
     DEFAULT_LANGUAGE,
     DEFAULT_UPDATE_INTERVAL_MINUTES,
     DEFAULT_UNITS,
     DISPLAY_NAME,
     DOMAIN,
+    HOURLY_FORECAST_DURATIONS,
     TWC_UNITS,
     UPDATE_INTERVAL_MINUTES,
 )
@@ -120,9 +126,23 @@ class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
         schema = vol.Schema(
             {
                 vol.Optional(
+                    CONF_DAILY_FORECAST_DURATION,
+                    default=self.config_entry.options.get(
+                        CONF_DAILY_FORECAST_DURATION,
+                        DEFAULT_DAILY_FORECAST_DURATION,
+                    ),
+                ): vol.In(DAILY_FORECAST_DURATIONS),
+                vol.Optional(
                     CONF_EXTRA_ENTITIES,
                     default=self.config_entry.options.get(CONF_EXTRA_ENTITIES, False),
                 ): bool,
+                vol.Optional(
+                    CONF_HOURLY_FORECAST_DURATION,
+                    default=self.config_entry.options.get(
+                        CONF_HOURLY_FORECAST_DURATION,
+                        DEFAULT_HOURLY_FORECAST_DURATION,
+                    ),
+                ): vol.In(HOURLY_FORECAST_DURATIONS),
                 vol.Optional(
                     CONF_UPDATE_INTERVAL_MINUTES,
                     default=self.config_entry.options.get(

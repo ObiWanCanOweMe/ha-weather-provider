@@ -9,7 +9,9 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
+    CONF_DAILY_FORECAST_DURATION,
     CONF_EXTRA_ENTITIES,
+    CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
@@ -256,7 +258,9 @@ async def test_options_flow_configures_optional_extra_entities(hass):
 
     assert result["type"] == "create_entry"
     assert result["data"] == {
+        CONF_DAILY_FORECAST_DURATION: "7day",
         CONF_EXTRA_ENTITIES: True,
+        CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 30,
     }
 
@@ -300,6 +304,58 @@ async def test_options_flow_configures_update_interval_controls(hass):
 
     assert result["type"] == "create_entry"
     assert result["data"] == {
+        CONF_DAILY_FORECAST_DURATION: "7day",
         CONF_EXTRA_ENTITIES: False,
+        CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 60,
+    }
+
+
+async def test_options_flow_configures_forecast_durations(hass):
+    """Options flow should allow forecast endpoint durations to be controlled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={
+            CONF_DAILY_FORECAST_DURATION: "7day",
+            CONF_EXTRA_ENTITIES: True,
+            CONF_HOURLY_FORECAST_DURATION: "2day",
+            CONF_UPDATE_INTERVAL_MINUTES: 30,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "init"
+
+    with patch.object(
+        hass.config_entries,
+        "async_reload",
+        AsyncMock(return_value=True),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_DAILY_FORECAST_DURATION: "15day",
+                CONF_EXTRA_ENTITIES: True,
+                CONF_HOURLY_FORECAST_DURATION: "6hour",
+                CONF_UPDATE_INTERVAL_MINUTES: 15,
+            },
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"] == {
+        CONF_DAILY_FORECAST_DURATION: "15day",
+        CONF_EXTRA_ENTITIES: True,
+        CONF_HOURLY_FORECAST_DURATION: "6hour",
+        CONF_UPDATE_INTERVAL_MINUTES: 15,
     }

@@ -12,6 +12,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.ha_weather_provider import async_migrate_entry, async_setup_entry, async_unload_entry
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
+    CONF_DAILY_FORECAST_DURATION,
+    CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
     CONF_LONGITUDE,
@@ -127,6 +129,82 @@ async def test_async_setup_entry_uses_configured_update_interval(hass):
         await async_setup_entry(hass, entry)
 
     assert mock_coordinator.call_args.kwargs["update_interval"] == timedelta(minutes=60)
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_passes_configured_forecast_durations(hass):
+    """Setup should pass selected forecast durations into the TWC client."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={
+            CONF_DAILY_FORECAST_DURATION: "15day",
+            CONF_HOURLY_FORECAST_DURATION: "6hour",
+        },
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ) as mock_client, patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ), patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_client.call_args.kwargs["daily_forecast_duration"] == "15day"
+    assert mock_client.call_args.kwargs["hourly_forecast_duration"] == "6hour"
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_falls_back_from_invalid_forecast_durations(hass):
+    """Setup should ignore invalid stored duration option values."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={
+            CONF_DAILY_FORECAST_DURATION: "30day",
+            CONF_HOURLY_FORECAST_DURATION: "4day",
+        },
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ) as mock_client, patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ), patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_client.call_args.kwargs["daily_forecast_duration"] == "7day"
+    assert mock_client.call_args.kwargs["hourly_forecast_duration"] == "2day"
 
 
 @pytest.mark.asyncio

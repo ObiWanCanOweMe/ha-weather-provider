@@ -8,10 +8,14 @@ from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
+from .const import DEFAULT_DAILY_FORECAST_DURATION, DEFAULT_HOURLY_FORECAST_DURATION
+
 BASE_URL = "https://api.weather.com"
 CURRENT_PATH = "/v3/wx/observations/current"
-DAILY_FORECAST_PATH = "/v3/wx/forecast/daily/7day"
-HOURLY_FORECAST_PATH = "/v3/wx/forecast/hourly/2day"
+DAILY_FORECAST_PATH_PREFIX = "/v3/wx/forecast/daily"
+HOURLY_FORECAST_PATH_PREFIX = "/v3/wx/forecast/hourly"
+DAILY_FORECAST_PATH = f"{DAILY_FORECAST_PATH_PREFIX}/{DEFAULT_DAILY_FORECAST_DURATION}"
+HOURLY_FORECAST_PATH = f"{HOURLY_FORECAST_PATH_PREFIX}/{DEFAULT_HOURLY_FORECAST_DURATION}"
 ALERT_HEADLINES_PATH = "/v3/alerts/headlines"
 
 
@@ -47,6 +51,8 @@ class TWCClient:
         longitude: float,
         units: str,
         language: str,
+        daily_forecast_duration: str = DEFAULT_DAILY_FORECAST_DURATION,
+        hourly_forecast_duration: str = DEFAULT_HOURLY_FORECAST_DURATION,
     ) -> None:
         self._session = session
         self._api_key = api_key
@@ -54,6 +60,8 @@ class TWCClient:
         self._longitude = longitude
         self._units = units
         self._language = language
+        self._daily_forecast_duration = daily_forecast_duration
+        self._hourly_forecast_duration = hourly_forecast_duration
 
     @property
     def _weather_query_params(self) -> dict[str, str]:
@@ -81,13 +89,15 @@ class TWCClient:
     async def async_get_daily_forecast(self) -> dict[str, Any]:
         """Return daily forecast data."""
         return await self._async_get_json(
-            DAILY_FORECAST_PATH, params=self._weather_query_params
+            f"{DAILY_FORECAST_PATH_PREFIX}/{self._daily_forecast_duration}",
+            params=self._weather_query_params,
         )
 
     async def async_get_hourly_forecast(self) -> dict[str, Any]:
         """Return hourly forecast data."""
         return await self._async_get_json(
-            HOURLY_FORECAST_PATH, params=self._weather_query_params
+            f"{HOURLY_FORECAST_PATH_PREFIX}/{self._hourly_forecast_duration}",
+            params=self._weather_query_params,
         )
 
     async def async_get_alert_headlines(self) -> dict[str, Any]:

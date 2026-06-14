@@ -30,11 +30,15 @@
       "init": {
         "title": "Options",
         "data": {
+          "daily_forecast_duration": "Daily forecast duration",
           "extra_entities": "Create optional extra entities",
+          "hourly_forecast_duration": "Hourly forecast duration",
           "update_interval_minutes": "Update interval"
         },
         "data_description": {
+          "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
           "extra_entities": "Adds companion diagnostic sensors for alert count, condition phrase, observation time, integration version, and wind gust.",
+          "hourly_forecast_duration": "The Weather Company hourly forecast endpoint to request.",
           "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
         }
       }

@@ -109,11 +109,63 @@ async def test_async_get_daily_forecast_calls_twc_daily_forecast_endpoint() -> N
 
 
 @pytest.mark.asyncio
+async def test_async_get_daily_forecast_uses_configured_duration() -> None:
+    """Daily forecast calls the configured duration endpoint."""
+    url = f"{api.BASE_URL}/v3/wx/forecast/daily/15day"
+    async with ClientSession() as session:
+        client = TWCClient(
+            session=session,
+            api_key=API_KEY,
+            latitude=LATITUDE,
+            longitude=LONGITUDE,
+            units=UNITS,
+            language=LANGUAGE,
+            daily_forecast_duration="15day",
+        )
+        with aioresponses() as mocked:
+            mocked.get(
+                _request_url(url),
+                payload={"forecasts": [{"day": "extended"}]},
+            )
+
+            payload = await client.async_get_daily_forecast()
+
+    assert payload == {"forecasts": [{"day": "extended"}]}
+    _assert_request(mocked, "GET", url)
+
+
+@pytest.mark.asyncio
 async def test_async_get_hourly_forecast_calls_twc_hourly_forecast_endpoint() -> None:
     """Hourly forecast call returns the payload from the expected endpoint."""
     url = f"{api.BASE_URL}{HOURLY_FORECAST_PATH}"
     async with ClientSession() as session:
         client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                _request_url(url),
+                payload={"validTimeUtc": [1718121600]},
+            )
+
+            payload = await client.async_get_hourly_forecast()
+
+    assert payload == {"validTimeUtc": [1718121600]}
+    _assert_request(mocked, "GET", url)
+
+
+@pytest.mark.asyncio
+async def test_async_get_hourly_forecast_uses_configured_duration() -> None:
+    """Hourly forecast calls the configured duration endpoint."""
+    url = f"{api.BASE_URL}/v3/wx/forecast/hourly/6hour"
+    async with ClientSession() as session:
+        client = TWCClient(
+            session=session,
+            api_key=API_KEY,
+            latitude=LATITUDE,
+            longitude=LONGITUDE,
+            units=UNITS,
+            language=LANGUAGE,
+            hourly_forecast_duration="6hour",
+        )
         with aioresponses() as mocked:
             mocked.get(
                 _request_url(url),

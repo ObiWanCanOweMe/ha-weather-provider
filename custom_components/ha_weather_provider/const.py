@@ -22,15 +22,29 @@ CONF_LONGITUDE = "longitude"
 CONF_UNITS = "units"
 CONF_EXTRA_ENTITIES = "extra_entities"
 CONF_UPDATE_INTERVAL_MINUTES = "update_interval_minutes"
+CONF_DAILY_FORECAST_DURATION = "daily_forecast_duration"
+CONF_HOURLY_FORECAST_DURATION = "hourly_forecast_duration"
 
 DEFAULT_LANGUAGE = "en-US"
 DEFAULT_UNITS = "e"
 DEFAULT_UPDATE_INTERVAL_MINUTES = 30
+DEFAULT_DAILY_FORECAST_DURATION = "7day"
+DEFAULT_HOURLY_FORECAST_DURATION = "2day"
 DEFAULT_UPDATE_INTERVAL = timedelta(minutes=DEFAULT_UPDATE_INTERVAL_MINUTES)
 DISPLAY_NAME = "The Weather Company"
 DEFAULT_ENTITY_ID = "weather.twc"
 INTEGRATION_VERSION = json.loads(Path(__file__).with_name("manifest.json").read_text())["version"]
 UPDATE_INTERVAL_MINUTES = (15, 30, 60)
+DAILY_FORECAST_DURATIONS = ("3day", "5day", "7day", "10day", "15day")
+HOURLY_FORECAST_DURATIONS = (
+    "6hour",
+    "12hour",
+    "1day",
+    "2day",
+    "3day",
+    "10day",
+    "15day",
+)
 
 TWC_UNITS = {
     "e": "English",
