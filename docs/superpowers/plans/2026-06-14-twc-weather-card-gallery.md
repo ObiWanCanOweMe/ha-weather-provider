@@ -25,7 +25,7 @@ This first implementation slice is Phase 1 only. Do not install HACS, download t
 - Create: `tests/test_weather_card_gallery.py`
 - Read: `docs/superpowers/specs/2026-06-14-twc-weather-card-gallery-design.md`
 
-- [ ] **Step 1: Write failing gallery tests**
+- [x] **Step 1: Write failing gallery tests**
 
 Create `tests/test_weather_card_gallery.py`:
 
@@ -171,7 +171,7 @@ def test_weather_card_gallery_docs_explain_setup_boundaries() -> None:
     assert "replace every `weather.twc` reference" in docs_text
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -181,7 +181,7 @@ PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_weather_
 
 Expected: FAIL because `dashboards/the-weather-company-card-gallery.yaml`, `docs/weather-card-gallery.md`, and `docs/examples/twc-weather-card-gallery-template-sensors.yaml` do not exist yet.
 
-- [ ] **Step 3: Commit failing tests**
+- [x] **Step 3: Commit failing tests**
 
 Run:
 
@@ -198,7 +198,7 @@ Expected: commit succeeds with only the new test file staged.
 - Create: `dashboards/the-weather-company-card-gallery.yaml`
 - Test: `tests/test_weather_card_gallery.py`
 
-- [ ] **Step 1: Add the gallery dashboard YAML**
+- [x] **Step 1: Add the gallery dashboard YAML**
 
 Create `dashboards/the-weather-company-card-gallery.yaml`:
 
@@ -419,7 +419,7 @@ cards:
     zoom_level: 8
 ```
 
-- [ ] **Step 2: Run gallery tests and verify dashboard-related failures shrink**
+- [x] **Step 2: Run gallery tests and verify dashboard-related failures shrink**
 
 Run:
 
@@ -429,7 +429,7 @@ PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_weather_
 
 Expected: tests still FAIL because docs and template sensors are not present, but dashboard parse and card-type assertions should pass.
 
-- [ ] **Step 3: Commit dashboard YAML**
+- [x] **Step 3: Commit dashboard YAML**
 
 Run:
 
@@ -446,7 +446,7 @@ Expected: commit succeeds with only the gallery dashboard file staged.
 - Create: `docs/examples/twc-weather-card-gallery-template-sensors.yaml`
 - Test: `tests/test_weather_card_gallery.py`
 
-- [ ] **Step 1: Add template helper YAML**
+- [x] **Step 1: Add template helper YAML**
 
 Create `docs/examples/twc-weather-card-gallery-template-sensors.yaml`:
 
@@ -464,27 +464,22 @@ template:
       - name: TWC Demo Temperature
         unique_id: twc_demo_temperature
         state: "{{ state_attr('weather.twc', 'temperature') }}"
-        unit_of_measurement: "°F"
 
       - name: TWC Demo Feels Like
         unique_id: twc_demo_feels_like
         state: "{{ state_attr('weather.twc', 'apparent_temperature') }}"
-        unit_of_measurement: "°F"
 
       - name: TWC Demo Humidity
         unique_id: twc_demo_humidity
         state: "{{ state_attr('weather.twc', 'humidity') }}"
-        unit_of_measurement: "%"
 
       - name: TWC Demo Pressure
         unique_id: twc_demo_pressure
         state: "{{ state_attr('weather.twc', 'pressure') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'pressure_unit') or 'hPa' }}"
 
       - name: TWC Demo Wind Speed
         unique_id: twc_demo_wind_speed
         state: "{{ state_attr('weather.twc', 'wind_speed') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'wind_speed_unit') or 'mph' }}"
 
       - name: TWC Demo Wind Bearing
         unique_id: twc_demo_wind_bearing
@@ -493,7 +488,6 @@ template:
       - name: TWC Demo Wind Gust
         unique_id: twc_demo_wind_gust
         state: "{{ state_attr('weather.twc', 'wind_gust_speed') }}"
-        unit_of_measurement: "{{ state_attr('weather.twc', 'wind_speed_unit') or 'mph' }}"
 
       - name: TWC Demo Alert Summary
         unique_id: twc_demo_alert_summary
@@ -502,7 +496,7 @@ template:
           {{ count }} active alert{{ '' if count == 1 else 's' }}
 ```
 
-- [ ] **Step 2: Run gallery tests and verify remaining failures are docs-only**
+- [x] **Step 2: Run gallery tests and verify remaining failures are docs-only**
 
 Run:
 
@@ -512,7 +506,7 @@ PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_weather_
 
 Expected: tests still FAIL only because `docs/weather-card-gallery.md` does not exist.
 
-- [ ] **Step 3: Commit template helpers**
+- [x] **Step 3: Commit template helpers**
 
 Run:
 
@@ -529,7 +523,7 @@ Expected: commit succeeds with only the helper YAML staged.
 - Create: `docs/weather-card-gallery.md`
 - Test: `tests/test_weather_card_gallery.py`
 
-- [ ] **Step 1: Add the setup and compatibility guide**
+- [x] **Step 1: Add the setup and compatibility guide**
 
 Create `docs/weather-card-gallery.md`:
 
@@ -626,7 +620,7 @@ The Lovelace Horizon Card depends on Home Assistant's `sun.sun` entity. The Weat
 Cards whose frontend resources are missing will show Home Assistant custom-card errors. That is expected during Phase 1.
 ```
 
-- [ ] **Step 2: Run gallery tests and verify they pass**
+- [x] **Step 2: Run gallery tests and verify they pass**
 
 Run:
 
@@ -636,7 +630,7 @@ PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_weather_
 
 Expected: all `tests/test_weather_card_gallery.py` tests pass.
 
-- [ ] **Step 3: Commit gallery documentation**
+- [x] **Step 3: Commit gallery documentation**
 
 Run:
 
@@ -652,7 +646,7 @@ Expected: commit succeeds with only the docs file staged.
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-14-twc-weather-card-gallery.md`
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run:
 
@@ -662,7 +656,7 @@ PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Run Ruff**
+- [x] **Step 2: Run Ruff**
 
 Run:
 
@@ -672,7 +666,7 @@ Run:
 
 Expected: `All checks passed!`
 
-- [ ] **Step 3: Run Obi project checks**
+- [x] **Step 3: Run Obi project checks**
 
 Run:
 
@@ -682,7 +676,7 @@ PATH=".worktrees/demo-dashboard-card/.venv/bin:$PATH" python3 /Users/akener/.cod
 
 Expected: compile/json checks pass and pytest reports all tests passing.
 
-- [ ] **Step 4: Review git status**
+- [x] **Step 4: Review git status**
 
 Run:
 
@@ -692,7 +686,7 @@ git status --short --branch
 
 Expected: only the unrelated untracked `docs/Weather Company Data  | API Common Usage Guide.pdf` remains outside the committed work.
 
-- [ ] **Step 5: Commit plan checklist updates**
+- [x] **Step 5: Commit plan checklist updates**
 
 After checking completed steps in this plan, run:
 
