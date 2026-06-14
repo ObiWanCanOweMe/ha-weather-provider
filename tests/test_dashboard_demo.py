@@ -123,6 +123,23 @@ def test_demo_dashboard_explains_missing_wind_gust() -> None:
     )
 
 
+def test_demo_dashboard_daily_enrichment_uses_bullet_list() -> None:
+    """Daily enrichment field list should scan as bullets instead of a sentence."""
+    yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8")
+
+    assert "- High and low temperature" in yaml_text
+    assert "- Precipitation chance and amount" in yaml_text
+    assert "- Wind" in yaml_text
+    assert "- Humidity" in yaml_text
+    assert "- Cloud cover" in yaml_text
+    assert "- Apparent temperature" in yaml_text
+    assert "- UV index" in yaml_text
+    assert (
+        "high and low temperature, condition, precipitation chance, precipitation amount,"
+        not in yaml_text
+    )
+
+
 def test_demo_dashboard_markdown_tables_preserve_row_newlines() -> None:
     """Markdown table cards should keep separator rows on their own lines."""
     cards = _walk_cards(_load_demo_card())

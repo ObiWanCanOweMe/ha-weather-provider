@@ -140,5 +140,12 @@ cards:
     title: Daily Enrichment
     content: |-
       Daily forecast rows are enriched by the integration where Home Assistant supports the fields:
-      high and low temperature, condition, precipitation chance, precipitation amount,
-      wind, humidity, cloud cover, apparent temperature, and UV index.
+
+      - High and low temperature
+      - Condition
+      - Precipitation chance and amount
+      - Wind
+      - Humidity
+      - Cloud cover
+      - Apparent temperature
+      - UV index
