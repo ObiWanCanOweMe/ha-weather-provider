@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.diagnostics import async_redact_data
 
-from .const import CONF_API_KEY, DOMAIN, INTEGRATION_VERSION
+from .const import CONF_API_KEY, CONF_LATITUDE, CONF_LONGITUDE, DOMAIN, INTEGRATION_VERSION
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -21,6 +21,11 @@ SECRET_KEY_FRAGMENTS = (
     "password",
     "credential",
 )
+
+SENSITIVE_KEYS = {
+    CONF_LATITUDE,
+    CONF_LONGITUDE,
+}
 
 
 def _secret_keys(*mappings: dict[str, Any]) -> set[str]:
@@ -55,7 +60,7 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     data = dict(entry.data)
     options = dict(entry.options)
-    to_redact = _secret_keys(data, options)
+    to_redact = SENSITIVE_KEYS | _secret_keys(data, options)
     coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     update_interval = getattr(coordinator, "update_interval", None)
     coordinator_data = getattr(coordinator, "data", None)

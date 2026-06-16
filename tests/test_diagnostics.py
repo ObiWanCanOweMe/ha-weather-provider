@@ -76,7 +76,11 @@ async def test_config_entry_diagnostics_redacts_config_entry_data(hass) -> None:
     assert diagnostics["integration_version"] == INTEGRATION_VERSION
     assert diagnostics["config_entry"]["entry_id"] == "entry-id"
     assert diagnostics["config_entry"]["data"][CONF_API_KEY] == REDACTED
+    assert diagnostics["config_entry"]["data"][CONF_LATITUDE] == REDACTED
+    assert diagnostics["config_entry"]["data"][CONF_LONGITUDE] == REDACTED
     assert RAW_API_KEY not in str(diagnostics)
+    assert "40.58" not in str(diagnostics)
+    assert "-111.66" not in str(diagnostics)
 
 
 async def test_config_entry_diagnostics_reports_options_and_coordinator(hass) -> None:
