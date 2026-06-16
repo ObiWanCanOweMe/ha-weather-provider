@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     CONF_ENABLE_POLLEN,
+    CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
     CONF_UNITS,
     DOMAIN,
@@ -43,6 +44,7 @@ class TWCSensorEntityDescription(SensorEntityDescription, frozen_or_thawed=True)
 
     value_fn: Callable[[TWCWeatherData], Any]
     unit_key: str | None = None
+    attr_fn: Callable[[TWCWeatherData], dict[str, Any]] | None = None
 
 
 def _value(data: dict[str, Any], key: str) -> Any:
@@ -187,6 +189,178 @@ def _pollen_forecast_time(data: TWCWeatherData) -> datetime | None:
 def _pollen_expiration_time(data: TWCWeatherData) -> datetime | None:
     """Return the pollen forecast expiration time."""
     return _timestamp_from_epoch(_pollen_metadata(data).get("expireTimeGmt"))
+
+
+def _present(value: Any) -> bool:
+    """Return whether a payload value should be exposed."""
+    return value is not None and value != ""
+
+
+def _first_present(*values: Any) -> Any:
+    """Return the first non-empty payload value."""
+    return next((value for value in values if _present(value)), None)
+
+
+def _columnar_record(payload: dict[str, Any], index: int) -> dict[str, Any]:
+    """Return one record from a columnar payload."""
+    record: dict[str, Any] = {}
+    for key, value in payload.items():
+        if isinstance(value, list):
+            record[key] = value[index] if index < len(value) else None
+        elif isinstance(value, dict):
+            record[key] = _columnar_record(value, index)
+        else:
+            record[key] = value
+    return record
+
+
+def _records_from_tropical_segment(segment: Any) -> list[dict[str, Any]]:
+    """Return tropical records from record-list or columnar payload segments."""
+    if isinstance(segment, list):
+        return [record for record in segment if isinstance(record, dict)]
+    if not isinstance(segment, dict):
+        return []
+
+    lengths = [len(value) for value in segment.values() if isinstance(value, list)]
+    if not lengths:
+        return [segment]
+    return [_columnar_record(segment, index) for index in range(max(lengths))]
+
+
+def _tropical_records(data: TWCWeatherData) -> list[dict[str, Any]]:
+    """Return active tropical storm records from supported payload shapes."""
+    payload = data.tropical_current_position
+    if not isinstance(payload, dict):
+        return []
+
+    for key in ("currentPosition", "current_position", "storms"):
+        records = _records_from_tropical_segment(payload.get(key))
+        if records:
+            return records
+
+    return _records_from_tropical_segment(payload)
+
+
+def _nested_value(record: dict[str, Any], parent_key: str, *keys: str) -> Any:
+    """Return a nested value from a tropical storm record."""
+    nested = record.get(parent_key)
+    if not isinstance(nested, dict):
+        return None
+    return _first_present(*(nested.get(key) for key in keys))
+
+
+def _headline_value(value: Any) -> Any:
+    """Return a compact headline string from a tropical storm record."""
+    if isinstance(value, list):
+        return _first_present(*value)
+    return value
+
+
+def _tropical_record_timestamp(record: dict[str, Any], *keys: str) -> datetime | None:
+    """Return the first timestamp from a tropical storm record."""
+    direct = _first_present(*(record.get(key) for key in keys))
+    nested = _first_present(
+        _nested_value(record, "advisory_info", *keys),
+        _nested_value(record, "advisoryInfo", *keys),
+    )
+    return _timestamp_from_epoch(_first_present(direct, nested))
+
+
+def _tropical_first_timestamp(data: TWCWeatherData, *keys: str) -> datetime | None:
+    """Return the first matching tropical storm timestamp."""
+    for record in _tropical_records(data):
+        timestamp = _tropical_record_timestamp(record, *keys)
+        if timestamp is not None:
+            return timestamp
+    return None
+
+
+def _tropical_storm_summary(record: dict[str, Any]) -> dict[str, Any]:
+    """Return compact attributes for one tropical storm record."""
+    advisory_time = _first_present(
+        _tropical_record_timestamp(record, "advisory_time_epoch", "advisoryTimeEpoch"),
+        _tropical_record_timestamp(record, "process_time_epoch", "processTimeEpoch"),
+    )
+    expires = _tropical_record_timestamp(record, "expire_time_gmt", "expireTimeGmt")
+    summary = {
+        "storm_id": _first_present(record.get("storm_id"), record.get("stormId")),
+        "storm_key": _first_present(record.get("storm_key"), record.get("stormKey")),
+        "name": _first_present(
+            record.get("storm_name"), record.get("stormName"), record.get("name")
+        ),
+        "basin": record.get("basin"),
+        "type": _first_present(
+            record.get("storm_type"), record.get("stormType"), record.get("type")
+        ),
+        "category": _first_present(
+            record.get("storm_sub_type"),
+            record.get("stormSubType"),
+            record.get("category"),
+        ),
+        "latitude": _first_present(record.get("lat"), record.get("latitude")),
+        "longitude": _first_present(record.get("lon"), record.get("longitude")),
+        "max_sustained_wind": _first_present(
+            record.get("max_sustained_wind"), record.get("maxSustainedWind")
+        ),
+        "wind_gust": _first_present(record.get("wind_gust"), record.get("windGust")),
+        "minimum_pressure": _first_present(
+            record.get("min_pressure"),
+            record.get("minPressure"),
+            record.get("minimum_pressure"),
+            record.get("minimumPressure"),
+        ),
+        "movement_direction": _first_present(
+            record.get("movement_direction"),
+            record.get("movementDirection"),
+            record.get("storm_dir_cardinal"),
+            record.get("stormDirCardinal"),
+            _nested_value(record, "heading", "storm_dir_cardinal", "stormDirCardinal"),
+        ),
+        "movement_speed": _first_present(
+            record.get("movement_speed"),
+            record.get("movementSpeed"),
+            record.get("storm_speed"),
+            record.get("stormSpeed"),
+            _nested_value(record, "heading", "storm_speed", "stormSpeed"),
+        ),
+        "advisory_time": advisory_time.isoformat()
+        if advisory_time is not None
+        else None,
+        "expires": expires.isoformat() if expires is not None else None,
+        "headline": _headline_value(record.get("headline")),
+    }
+    return {key: value for key, value in summary.items() if _present(value)}
+
+
+def _tropical_storm_summaries(data: TWCWeatherData) -> list[dict[str, Any]]:
+    """Return compact active tropical storm summaries."""
+    return [
+        summary
+        for summary in (
+            _tropical_storm_summary(record) for record in _tropical_records(data)
+        )
+        if summary
+    ]
+
+
+def _tropical_storm_count(data: TWCWeatherData) -> int:
+    """Return the active tropical storm count."""
+    return len(_tropical_storm_summaries(data))
+
+
+def _tropical_storm_state(data: TWCWeatherData) -> str:
+    """Return a compact active tropical storm state."""
+    count = _tropical_storm_count(data)
+    if count == 0:
+        return "No active storms"
+    if count == 1:
+        return "1 active storm"
+    return f"{count} active storms"
+
+
+def _tropical_storm_attributes(data: TWCWeatherData) -> dict[str, Any]:
+    """Return active tropical storm attributes."""
+    return {"storms": _tropical_storm_summaries(data)}
 
 
 def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
@@ -434,6 +608,46 @@ POLLEN_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
         name="Pollen Ragweed Category",
         icon="mdi:sprout",
         value_fn=lambda data: _pollen_series_value(data, "ragweedPollenCategory"),
+    ),
+)
+
+
+TROPICAL_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
+    TWCSensorEntityDescription(
+        key="tropical_active_storm_count",
+        name="Tropical Active Storm Count",
+        icon="mdi:weather-hurricane",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_tropical_storm_count,
+    ),
+    TWCSensorEntityDescription(
+        key="tropical_active_storms",
+        name="Tropical Active Storms",
+        icon="mdi:weather-hurricane",
+        value_fn=_tropical_storm_state,
+        attr_fn=_tropical_storm_attributes,
+    ),
+    TWCSensorEntityDescription(
+        key="tropical_last_update_time",
+        name="Tropical Last Update Time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: _tropical_first_timestamp(
+            data,
+            "advisory_time_epoch",
+            "advisoryTimeEpoch",
+            "process_time_epoch",
+            "processTimeEpoch",
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="tropical_expiration_time",
+        name="Tropical Expiration Time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: _tropical_first_timestamp(
+            data,
+            "expire_time_gmt",
+            "expireTimeGmt",
+        ),
     ),
 )
 
@@ -689,6 +903,8 @@ async def async_setup_entry(
         descriptions.extend(SENSOR_DESCRIPTIONS)
     if entry.options.get(CONF_ENABLE_POLLEN, False):
         descriptions.extend(POLLEN_SENSOR_DESCRIPTIONS)
+    if entry.options.get(CONF_ENABLE_TROPICAL_WEATHER, False):
+        descriptions.extend(TROPICAL_SENSOR_DESCRIPTIONS)
     if not descriptions:
         return
 
@@ -729,10 +945,22 @@ class TWCSensorEntity(CoordinatorEntity[TWCWeatherCoordinator], SensorEntity):
         """Return optional TWC pollen sensor descriptions."""
         return POLLEN_SENSOR_DESCRIPTIONS
 
+    @staticmethod
+    def tropical_entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
+        """Return optional TWC tropical sensor descriptions."""
+        return TROPICAL_SENSOR_DESCRIPTIONS
+
     @property
     def native_value(self) -> Any:
         """Return the current sensor value."""
         return self.entity_description.value_fn(self.coordinator.data)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return sensor attributes, when configured."""
+        if self.entity_description.attr_fn is None:
+            return None
+        return self.entity_description.attr_fn(self.coordinator.data)
 
     @property
     def native_unit_of_measurement(self) -> str | None:

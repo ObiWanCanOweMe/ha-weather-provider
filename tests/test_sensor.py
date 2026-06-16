@@ -19,6 +19,7 @@ from homeassistant.const import (
 
 from custom_components.ha_weather_provider.const import (
     CONF_ENABLE_POLLEN,
+    CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
     CONF_UNITS,
     DOMAIN,
@@ -60,6 +61,7 @@ def _coordinator(
     *,
     daily_forecast: dict[str, object] | None = None,
     pollen_forecast: dict[str, object] | None = None,
+    tropical_current_position: dict[str, object] | None = None,
 ) -> SimpleNamespace:
     """Return coordinator-shaped test data for sensor entities."""
     return SimpleNamespace(
@@ -103,6 +105,7 @@ def _coordinator(
                 ]
             },
             pollen_forecast=pollen_forecast or {},
+            tropical_current_position=tropical_current_position or {},
         )
     )
 
@@ -144,6 +147,25 @@ async def test_sensor_setup_adds_pollen_entities_when_pollen_enabled(hass) -> No
         "entry-id_pollen_tree_category",
         "entry-id_pollen_ragweed_index",
         "entry-id_pollen_ragweed_category",
+    ]
+
+
+async def test_sensor_setup_adds_tropical_entities_when_tropical_enabled(hass) -> None:
+    """Tropical sensors should be created when the tropical option is enabled."""
+    async_add_entities = Mock()
+    entry = _entry(
+        options={CONF_ENABLE_TROPICAL_WEATHER: True, CONF_EXTRA_ENTITIES: False}
+    )
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    entities = async_add_entities.call_args.args[0]
+    assert [entity.unique_id for entity in entities] == [
+        "entry-id_tropical_active_storm_count",
+        "entry-id_tropical_active_storms",
+        "entry-id_tropical_last_update_time",
+        "entry-id_tropical_expiration_time",
     ]
 
 
@@ -473,3 +495,100 @@ def test_pollen_sensor_values_are_unavailable_when_payload_is_missing() -> None:
     )
 
     assert entity.native_value is None
+
+
+def test_tropical_sensor_values() -> None:
+    """Tropical sensors should expose compact active storm summaries."""
+    coordinator = _coordinator(
+        tropical_current_position={
+            "currentPosition": [
+                {
+                    "storm_id": "AL012026",
+                    "storm_key": "storm-key-1",
+                    "storm_name": "Alex",
+                    "basin": "AL",
+                    "storm_type": "Tropical Storm",
+                    "storm_sub_type": "Category 1 Hurricane",
+                    "lat": 24.5,
+                    "lon": -72.3,
+                    "max_sustained_wind": 65,
+                    "wind_gust": 80,
+                    "min_pressure": 992,
+                    "expire_time_gmt": 1781712000,
+                    "headline": ["Alex remains offshore."],
+                    "advisory_info": {
+                        "advisory_time_epoch": 1781701200,
+                        "process_time_epoch": 1781706300,
+                    },
+                    "heading": {
+                        "storm_dir_cardinal": "NW",
+                        "storm_speed": 12,
+                    },
+                }
+            ]
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+    }
+
+    assert entities["tropical_active_storm_count"].native_value == 1
+    assert entities["tropical_active_storms"].native_value == "1 active storm"
+    assert entities["tropical_active_storms"].extra_state_attributes == {
+        "storms": [
+            {
+                "storm_id": "AL012026",
+                "storm_key": "storm-key-1",
+                "name": "Alex",
+                "basin": "AL",
+                "type": "Tropical Storm",
+                "category": "Category 1 Hurricane",
+                "latitude": 24.5,
+                "longitude": -72.3,
+                "max_sustained_wind": 65,
+                "wind_gust": 80,
+                "minimum_pressure": 992,
+                "movement_direction": "NW",
+                "movement_speed": 12,
+                "advisory_time": "2026-06-17T13:00:00+00:00",
+                "expires": "2026-06-17T16:00:00+00:00",
+                "headline": "Alex remains offshore.",
+            }
+        ]
+    }
+    assert entities["tropical_last_update_time"].native_value == datetime(
+        2026, 6, 17, 13, 0, tzinfo=UTC
+    )
+    assert (
+        entities["tropical_last_update_time"].device_class
+        == SensorDeviceClass.TIMESTAMP
+    )
+    assert entities["tropical_expiration_time"].native_value == datetime(
+        2026, 6, 17, 16, 0, tzinfo=UTC
+    )
+
+
+def test_tropical_sensor_values_are_empty_when_payload_is_missing() -> None:
+    """Tropical sensors should expose no-active-storm state for absent endpoint data."""
+    coordinator = _coordinator(tropical_current_position={})
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+    }
+
+    assert entities["tropical_active_storm_count"].native_value == 0
+    assert entities["tropical_active_storms"].native_value == "No active storms"
+    assert entities["tropical_active_storms"].extra_state_attributes == {"storms": []}
+    assert entities["tropical_last_update_time"].native_value is None
+    assert entities["tropical_expiration_time"].native_value is None
