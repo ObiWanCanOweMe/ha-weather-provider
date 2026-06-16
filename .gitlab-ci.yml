@@ -38,7 +38,7 @@ sync-github:
     - git config user.email "gitlab-ci@git.kener.org"
     - git remote add github "https://x-access-token:${GITHUB_SYNC_TOKEN}@github.com/${GITHUB_SYNC_REPOSITORY}.git"
     - export GITHUB_SYNC_BRANCH="${GITHUB_SYNC_BRANCH:-$CI_DEFAULT_BRANCH}"
-    - git push github "HEAD:${GITHUB_SYNC_BRANCH}"
+    - git push github "HEAD:refs/heads/${GITHUB_SYNC_BRANCH}"
     - git push github --tags
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $GITHUB_SYNC_REPOSITORY && $GITHUB_SYNC_TOKEN'
