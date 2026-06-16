@@ -293,9 +293,10 @@ def _tropical_timestamp_from_value(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+    return timestamp if timestamp.tzinfo is not None else None
 
 
 def _tropical_first_timestamp(data: TWCWeatherData, *keys: str) -> datetime | None:
@@ -368,6 +369,19 @@ def _tropical_storm_summary(record: dict[str, Any]) -> dict[str, Any]:
         "expires": expires.isoformat() if expires is not None else None,
         "headline": _headline_value(record.get("headline")),
     }
+    if not any(
+        _present(summary.get(key))
+        for key in (
+            "storm_id",
+            "storm_key",
+            "name",
+            "latitude",
+            "longitude",
+            "type",
+            "category",
+        )
+    ):
+        return {}
     return {key: value for key, value in summary.items() if _present(value)}
 
 

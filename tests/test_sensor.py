@@ -686,3 +686,54 @@ def test_tropical_sensor_values_are_empty_for_empty_advisoryinfo() -> None:
     assert entities["tropical_active_storm_count"].native_value == 0
     assert entities["tropical_active_storms"].native_value == "No active storms"
     assert entities["tropical_active_storms"].extra_state_attributes == {"storms": []}
+
+
+def test_tropical_sensor_values_are_empty_for_metadata_only_payload() -> None:
+    """Tropical sensors should not count endpoint metadata as an active storm."""
+    coordinator = _coordinator(
+        tropical_current_position={
+            "source": "all",
+            "expire_time_gmt": 1749607426,
+            "status_code": 200,
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+    }
+
+    assert entities["tropical_active_storm_count"].native_value == 0
+    assert entities["tropical_active_storms"].native_value == "No active storms"
+    assert entities["tropical_active_storms"].extra_state_attributes == {"storms": []}
+
+
+def test_tropical_timestamp_sensor_ignores_offsetless_iso_values() -> None:
+    """Tropical timestamp sensors should not expose naive datetimes."""
+    coordinator = _coordinator(
+        tropical_current_position={
+            "advisoryinfo": [
+                {
+                    "storm_id": "AL942025",
+                    "adv_dt_tm": "2025-06-04T17:00:00",
+                    "currentposition": {"lat": 22.10, "lon": -61.70},
+                }
+            ]
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entity = next(
+        entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+        if entity.entity_description.key == "tropical_last_update_time"
+    )
+
+    assert entity.native_value is None
