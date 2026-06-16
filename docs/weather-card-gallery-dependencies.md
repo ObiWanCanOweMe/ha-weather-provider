@@ -2,6 +2,8 @@
 
 This document records the frontend cards, Home Assistant integrations, helper sensors, and external data sources needed by `dashboards/the-weather-company-card-gallery.yaml`. That YAML file is a complete Home Assistant Sections view. Each gallery item uses its own grid section so the descriptor card stays adjacent to the corresponding weather-card demo without wrapping the whole gallery in one nested `vertical-stack` card.
 
+Operational polling and endpoint entitlement behavior is documented in `docs/operations.md`.
+
 The test Home Assistant instance now uses HACS-managed resources for cards installed through HACS. Some remaining cards are still installed manually under `/config/www/community` with matching `/local/community/...` Lovelace resources.
 
 ## Test Instance Install Paths
