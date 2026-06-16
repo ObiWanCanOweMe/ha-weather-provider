@@ -6,6 +6,9 @@ from pathlib import Path
 
 
 OPERATIONS_DOC = Path("docs/operations.md")
+WEATHER_CARD_GALLERY_DEPENDENCIES_DOC = Path(
+    "docs/weather-card-gallery-dependencies.md"
+)
 
 
 def test_operations_doc_covers_polling_and_optional_endpoints() -> None:
@@ -28,3 +31,11 @@ def test_operations_doc_covers_polling_and_optional_endpoints() -> None:
     assert "no value or endpoint-specific empty states" in text
     assert "related entities unavailable" not in text
     assert "optional sensors unavailable" not in text
+
+
+def test_weather_card_gallery_dependencies_doc_optional_sensors_wording() -> None:
+    """Gallery dependencies docs describe optional sensor data without overpromising."""
+    text = WEATHER_CARD_GALLERY_DEPENDENCIES_DOC.read_text(encoding="utf-8")
+
+    assert "populate when endpoint data is returned" in text
+    assert "sensors are available when enabled" not in text
