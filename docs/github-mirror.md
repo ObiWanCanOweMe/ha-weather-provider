@@ -7,7 +7,7 @@ HACS custom repositories must be public GitHub repositories. The canonical proje
 1. Create an empty public GitHub repository, for example:
 
    ```text
-   https://github.com/<owner>/ha-weather-provider
+   https://github.com/ObiWanCanOweMe/ha-weather-provider
    ```
 
    If you initialize the repository with a README, keep track of its default branch name and set `GITHUB_SYNC_BRANCH` below.
@@ -21,7 +21,7 @@ Add these variables in GitLab under **Settings** > **CI/CD** > **Variables**:
 
 | Variable | Value | Notes |
 | --- | --- | --- |
-| `GITHUB_SYNC_REPOSITORY` | `<owner>/ha-weather-provider` | Do not include `https://github.com/`. |
+| `GITHUB_SYNC_REPOSITORY` | `ObiWanCanOweMe/ha-weather-provider` | Do not include `https://github.com/`. |
 | `GITHUB_SYNC_TOKEN` | GitHub token value | Mark as masked and protected if the default branch is protected. |
 | `GITHUB_SYNC_BRANCH` | `main` or `master` | Optional. Defaults to the GitLab default branch. |
 
@@ -39,5 +39,5 @@ The job does not push merge request branches. GitLab remains the canonical devel
 After the first successful sync, use the GitHub mirror URL as the HACS custom repository URL:
 
 ```text
-https://github.com/<owner>/ha-weather-provider
+https://github.com/ObiWanCanOweMe/ha-weather-provider
 ```

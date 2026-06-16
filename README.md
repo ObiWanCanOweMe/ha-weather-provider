@@ -36,7 +36,7 @@ HACS does not support GitLab-hosted custom repositories. Do not use the `git.ken
 4. Add the public GitHub mirror URL:
 
    ```text
-   https://github.com/<owner>/ha-weather-provider
+   https://github.com/ObiWanCanOweMe/ha-weather-provider
    ```
 
 5. Select **Integration** as the category.
