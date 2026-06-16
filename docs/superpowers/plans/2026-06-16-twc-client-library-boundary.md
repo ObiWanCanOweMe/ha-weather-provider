@@ -666,6 +666,12 @@ def alert_summaries(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 Update `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
 
+Keep this package import dependency-light: do not eagerly import `.client` from
+`__init__.py`. Normalizer submodule imports must work with only
+`custom_components` on `PYTHONPATH` and without `aiohttp` or Home Assistant
+installed. If package-level `TWCClient` ergonomics are needed, expose it through
+lazy `__getattr__`.
+
 ```python
 from .normalizers import (
     alert_summaries,

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from custom_components.ha_weather_provider.twc_weather_client.normalizers import (
     alert_summaries,
     condition_from_twc,
@@ -13,6 +18,8 @@ from custom_components.ha_weather_provider.twc_weather_client.normalizers import
     series_values,
     value,
 )
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_value_returns_missing_and_empty_payload_values_as_none() -> None:
@@ -118,3 +125,29 @@ def test_alert_summaries_returns_stable_alert_attribute_payloads() -> None:
         }
     ]
     assert alert_summaries({"alerts": {}}) == []
+
+
+def test_normalizers_import_without_aiohttp_or_homeassistant() -> None:
+    """Normalizer imports should not load integration-only dependencies."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(PROJECT_ROOT / "custom_components")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['homeassistant'] = None; "
+                "sys.modules['aiohttp'] = None; "
+                "import ha_weather_provider.twc_weather_client.normalizers; "
+                "print('ok')"
+            ),
+        ],
+        check=True,
+        capture_output=True,
+        env=env,
+        text=True,
+    )
+
+    assert result.stdout == "ok\n"

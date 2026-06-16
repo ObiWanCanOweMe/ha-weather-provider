@@ -27,7 +27,8 @@ from .normalizers import (
     series_values,
     value,
 )
-from .client import TWCClient
+
+_CLIENT_EXPORTS = frozenset({"TWCClient"})
 
 __all__ = [
     "CONDITION_BY_ICON",
@@ -51,3 +52,12 @@ __all__ = [
     "series_values",
     "value",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Load aiohttp-backed client exports only when requested."""
+    if name in _CLIENT_EXPORTS:
+        from .client import TWCClient
+
+        return TWCClient
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
