@@ -25,6 +25,10 @@ def test_develop_script_uses_custom_component_pythonpath() -> None:
     """The development helper starts Home Assistant with custom components."""
     script = DEVELOP_SCRIPT.read_text(encoding="utf-8")
 
-    assert "PYTHONPATH" in script
+    assert (
+        'export PYTHONPATH="${PWD}/custom_components${PYTHONPATH:+:${PYTHONPATH}}"'
+        in script
+    )
+    assert "${PYTHONPATH:-}:" not in script
     assert "custom_components" in script
     assert "hass --config" in script
