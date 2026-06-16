@@ -592,3 +592,97 @@ def test_tropical_sensor_values_are_empty_when_payload_is_missing() -> None:
     assert entities["tropical_active_storms"].extra_state_attributes == {"storms": []}
     assert entities["tropical_last_update_time"].native_value is None
     assert entities["tropical_expiration_time"].native_value is None
+
+
+def test_tropical_sensor_values_from_documented_current_position_payload() -> None:
+    """Tropical sensors should parse documented current-position payloads."""
+    coordinator = _coordinator(
+        tropical_current_position={
+            "source": "all",
+            "expire_time_gmt": 1749607426,
+            "status_code": 200,
+            "advisoryinfo": [
+                {
+                    "storm_key": "70f20556430be3634b82d8a49602d312",
+                    "storm_id": "AL942025",
+                    "storm_name": "Lee",
+                    "basin": "AL",
+                    "adv_dt_tm": "2025-06-04T17:00:00-04:00",
+                    "process_time_gmt": 1748988499,
+                    "expire_time_gmt": 1749675600,
+                    "currentposition": {
+                        "lat": 22.10,
+                        "lon": -61.70,
+                        "storm_type": "Hurricane",
+                        "storm_sub_type": "Category 4 Hurricane",
+                        "headline": None,
+                        "min_pressure": 28.32,
+                        "max_sustained_wind": 120,
+                        "wind_gust": 140,
+                        "heading": {
+                            "storm_dir": "300",
+                            "storm_dir_cardinal": "WNW",
+                            "storm_spd": 8,
+                        },
+                    },
+                }
+            ],
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+    }
+
+    assert entities["tropical_active_storm_count"].native_value == 1
+    assert entities["tropical_active_storms"].native_value == "1 active storm"
+    assert entities["tropical_active_storms"].extra_state_attributes == {
+        "storms": [
+            {
+                "storm_id": "AL942025",
+                "storm_key": "70f20556430be3634b82d8a49602d312",
+                "name": "Lee",
+                "basin": "AL",
+                "type": "Hurricane",
+                "category": "Category 4 Hurricane",
+                "latitude": 22.10,
+                "longitude": -61.70,
+                "max_sustained_wind": 120,
+                "wind_gust": 140,
+                "minimum_pressure": 28.32,
+                "movement_direction": "WNW",
+                "movement_speed": 8,
+                "advisory_time": "2025-06-04T17:00:00-04:00",
+                "expires": "2025-06-11T21:00:00+00:00",
+            }
+        ]
+    }
+    assert entities["tropical_last_update_time"].native_value == datetime.fromisoformat(
+        "2025-06-04T17:00:00-04:00"
+    )
+    assert entities["tropical_expiration_time"].native_value == datetime(
+        2025, 6, 11, 21, 0, tzinfo=UTC
+    )
+
+
+def test_tropical_sensor_values_are_empty_for_empty_advisoryinfo() -> None:
+    """Tropical sensors should treat an empty documented storm list as no storms."""
+    coordinator = _coordinator(tropical_current_position={"advisoryinfo": []})
+    entry = _entry(options={CONF_ENABLE_TROPICAL_WEATHER: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.tropical_entity_descriptions()
+        ]
+    }
+
+    assert entities["tropical_active_storm_count"].native_value == 0
+    assert entities["tropical_active_storms"].native_value == "No active storms"
+    assert entities["tropical_active_storms"].extra_state_attributes == {"storms": []}

@@ -44,6 +44,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         tropical_current_position={},
     )
     client.async_get_pollen_forecast.assert_not_called()
+    client.async_get_tropical_current_position.assert_not_called()
 
 
 @pytest.mark.asyncio

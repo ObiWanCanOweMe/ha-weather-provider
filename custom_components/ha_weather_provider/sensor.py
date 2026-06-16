@@ -217,14 +217,33 @@ def _columnar_record(payload: dict[str, Any], index: int) -> dict[str, Any]:
 def _records_from_tropical_segment(segment: Any) -> list[dict[str, Any]]:
     """Return tropical records from record-list or columnar payload segments."""
     if isinstance(segment, list):
-        return [record for record in segment if isinstance(record, dict)]
+        return [
+            _normalize_tropical_record(record)
+            for record in segment
+            if isinstance(record, dict)
+        ]
     if not isinstance(segment, dict):
         return []
 
     lengths = [len(value) for value in segment.values() if isinstance(value, list)]
     if not lengths:
-        return [segment]
-    return [_columnar_record(segment, index) for index in range(max(lengths))]
+        return [_normalize_tropical_record(segment)]
+    return [
+        _normalize_tropical_record(_columnar_record(segment, index))
+        for index in range(max(lengths))
+    ]
+
+
+def _normalize_tropical_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Return a tropical record with documented nested current-position fields merged."""
+    position = _first_present(
+        record.get("currentposition"),
+        record.get("currentPosition"),
+        record.get("current_position"),
+    )
+    if not isinstance(position, dict):
+        return record
+    return {**record, **position}
 
 
 def _tropical_records(data: TWCWeatherData) -> list[dict[str, Any]]:
@@ -233,7 +252,7 @@ def _tropical_records(data: TWCWeatherData) -> list[dict[str, Any]]:
     if not isinstance(payload, dict):
         return []
 
-    for key in ("currentPosition", "current_position", "storms"):
+    for key in ("advisoryinfo", "currentPosition", "current_position", "storms"):
         records = _records_from_tropical_segment(payload.get(key))
         if records:
             return records
@@ -263,7 +282,20 @@ def _tropical_record_timestamp(record: dict[str, Any], *keys: str) -> datetime |
         _nested_value(record, "advisory_info", *keys),
         _nested_value(record, "advisoryInfo", *keys),
     )
-    return _timestamp_from_epoch(_first_present(direct, nested))
+    return _tropical_timestamp_from_value(_first_present(direct, nested))
+
+
+def _tropical_timestamp_from_value(value: Any) -> datetime | None:
+    """Return a tropical timestamp from epoch or ISO-8601 payload values."""
+    timestamp = _timestamp_from_epoch(value)
+    if timestamp is not None:
+        return timestamp
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def _tropical_first_timestamp(data: TWCWeatherData, *keys: str) -> datetime | None:
@@ -278,8 +310,11 @@ def _tropical_first_timestamp(data: TWCWeatherData, *keys: str) -> datetime | No
 def _tropical_storm_summary(record: dict[str, Any]) -> dict[str, Any]:
     """Return compact attributes for one tropical storm record."""
     advisory_time = _first_present(
-        _tropical_record_timestamp(record, "advisory_time_epoch", "advisoryTimeEpoch"),
+        _tropical_record_timestamp(
+            record, "adv_dt_tm", "advisory_time_epoch", "advisoryTimeEpoch"
+        ),
         _tropical_record_timestamp(record, "process_time_epoch", "processTimeEpoch"),
+        _tropical_record_timestamp(record, "process_time_gmt", "processTimeGmt"),
     )
     expires = _tropical_record_timestamp(record, "expire_time_gmt", "expireTimeGmt")
     summary = {
@@ -321,7 +356,11 @@ def _tropical_storm_summary(record: dict[str, Any]) -> dict[str, Any]:
             record.get("movementSpeed"),
             record.get("storm_speed"),
             record.get("stormSpeed"),
-            _nested_value(record, "heading", "storm_speed", "stormSpeed"),
+            record.get("storm_spd"),
+            record.get("stormSpd"),
+            _nested_value(
+                record, "heading", "storm_speed", "stormSpeed", "storm_spd", "stormSpd"
+            ),
         ),
         "advisory_time": advisory_time.isoformat()
         if advisory_time is not None
@@ -633,10 +672,13 @@ TROPICAL_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda data: _tropical_first_timestamp(
             data,
+            "adv_dt_tm",
             "advisory_time_epoch",
             "advisoryTimeEpoch",
             "process_time_epoch",
             "processTimeEpoch",
+            "process_time_gmt",
+            "processTimeGmt",
         ),
     ),
     TWCSensorEntityDescription(
