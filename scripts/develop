@@ -10,5 +10,5 @@ if [[ ! -f "${CONFIG_DIR}/configuration.yaml" ]]; then
   hass --config "${CONFIG_DIR}" --script ensure_config
 fi
 
-export PYTHONPATH="${PYTHONPATH:-}:${PWD}/custom_components"
+export PYTHONPATH="${PWD}/custom_components${PYTHONPATH:+:${PYTHONPATH}}"
 hass --config "${CONFIG_DIR}" --debug
