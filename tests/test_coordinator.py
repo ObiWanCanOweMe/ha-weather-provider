@@ -43,9 +43,11 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         pollen_forecast={},
         pollen_observation={},
         tropical_current_position={},
+        air_quality={},
     )
     client.async_get_pollen_forecast.assert_not_called()
     client.async_get_tropical_current_position.assert_not_called()
+    client.async_get_air_quality.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -165,6 +167,25 @@ async def test_coordinator_fetches_tropical_when_enabled(hass) -> None:
 
 
 @pytest.mark.asyncio
+async def test_coordinator_fetches_air_quality_when_enabled(hass) -> None:
+    """Coordinator should merge air quality data when enabled."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_air_quality.return_value = {
+        "globalairquality": {"airQualityIndex": 61}
+    }
+    coordinator = TWCWeatherCoordinator(hass, client, air_quality_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.air_quality == {"globalairquality": {"airQualityIndex": 61}}
+    client.async_get_air_quality.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "error",
     [
@@ -190,6 +211,34 @@ async def test_coordinator_keeps_weather_data_when_optional_tropical_unavailable
 
     assert data.current == {"temperature": 72}
     assert data.tropical_current_position == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error",
+    [
+        TWCNoDataError("empty"),
+        TWCAuthError("bad key for optional endpoint"),
+        TWCPermissionError("no access"),
+        TWCRequestError("temporary air quality failure"),
+    ],
+)
+async def test_coordinator_keeps_weather_data_when_optional_air_quality_unavailable(
+    hass, error
+) -> None:
+    """Optional air quality endpoint failures should not fail weather refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_air_quality.side_effect = error
+    coordinator = TWCWeatherCoordinator(hass, client, air_quality_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.current == {"temperature": 72}
+    assert data.air_quality == {}
 
 
 def test_coordinator_uses_configured_update_interval(hass) -> None:

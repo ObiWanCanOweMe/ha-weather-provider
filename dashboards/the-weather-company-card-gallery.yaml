@@ -39,13 +39,13 @@ sections:
       | Home Assistant Weather Forecast Card | Live | `weather.twc` |
       | Simple Weather Card | Installed via HACS | `weather.twc` |
       | Hourly Weather Card | Installed via HACS | `weather.twc` hourly forecast |
-      | Animated Weather Card | Requires adapter entities | `sensor.twc_demo_*` |
+      | Animated Weather Card | Requires adapter entities | optional `sensor.twc_*` sensors |
       | Weather Radar Card | Requires non-TWC source | RainViewer radar tiles |
       | Clock Weather Card | Installed via HACS | `weather.twc`, `sun.sun` |
       | Meteoalarm Card | Adapter needed | TWC alert summary |
       | Lovelace Horizon Card | Requires non-TWC source | Home Assistant sun/moon context |
-      | Weather Conditions Card | Requires adapter entities | `sensor.twc_demo_*` |
-      | Platinum Weather Card | Requires adapter entities | `weather.twc`, `sensor.twc_demo_*` |
+      | Weather Conditions Card | Requires adapter entities | optional `sensor.twc_*` sensors |
+      | Platinum Weather Card | Requires adapter entities | `weather.twc`, optional `sensor.twc_*` sensors |
 - type: grid
   title: Home Assistant Weather Forecast Card
   cards:
@@ -121,19 +121,19 @@ sections:
     content: |-
       Status: **Requires adapter entities**
 
-      This card family expects many sensor-style inputs. Current conditions use template adapter sensors; forecast rows use dedicated optional daily forecast adapter sensors from the integration.
+      This card family expects many sensor-style inputs. Current conditions and forecast rows use optional adapter sensors from the integration.
   - type: custom:bom-weather-card
     title: Animated Weather Card
     locale: en-US
-    entity_current_conditions: sensor.twc_demo_condition
-    entity_current_text: sensor.twc_demo_condition
-    entity_temperature: sensor.twc_demo_temperature
-    entity_apparent_temp: sensor.twc_demo_feels_like
-    entity_humidity: sensor.twc_demo_humidity
-    entity_pressure: sensor.twc_demo_pressure
-    entity_wind_bearing: sensor.twc_demo_wind_bearing
-    entity_wind_speed: sensor.twc_demo_wind_speed
-    entity_wind_gust: sensor.twc_demo_wind_gust
+    entity_current_conditions: sensor.twc_condition_phrase
+    entity_current_text: sensor.twc_condition_phrase
+    entity_temperature: sensor.twc_temperature
+    entity_apparent_temp: sensor.twc_feels_like_temperature
+    entity_humidity: sensor.twc_humidity
+    entity_pressure: sensor.twc_pressure
+    entity_wind_bearing: sensor.twc_wind_bearing
+    entity_wind_speed: sensor.twc_wind_speed
+    entity_wind_gust: sensor.twc_wind_gust
     entity_forecast_icon_1: sensor.twc_daily_forecast_day_1_condition
     entity_forecast_high_temp_1: sensor.twc_daily_forecast_day_1_high
     entity_forecast_low_temp_1: sensor.twc_daily_forecast_day_1_low
@@ -187,8 +187,8 @@ sections:
     card_config_version: 8
     entity: weather.twc
     entity_forecast_icon: weather.twc
-    entity_summary: sensor.twc_demo_condition
-    entity_temperature: sensor.twc_demo_temperature
+    entity_summary: sensor.twc_condition_phrase
+    entity_temperature: sensor.twc_temperature
     option_show_overview_decimals: true
     option_show_overview_separator: false
     overview_layout: complete
@@ -208,7 +208,7 @@ sections:
     content: |-
       Status: **Requires adapter entities**
 
-      Advanced weather-station style card. TWC can provide core weather values and optional pollen forecast sensors; air quality and meteogram data are not currently exposed by this integration.
+      Advanced weather-station style card. TWC can provide core weather values, optional pollen sensors, and optional air quality sensors. Meteogram data is not currently exposed by this integration.
   - type: custom:ha-card-weather-conditions
     name: Weather Conditions Card
     language: en
@@ -217,12 +217,12 @@ sections:
       animation: true
       sun: sun.sun
       present:
-        condition: sensor.twc_demo_condition
-        temperature: sensor.twc_demo_temperature
-        temperature_feelslike: sensor.twc_demo_feels_like
-        humidity: sensor.twc_demo_humidity
-        pressure: sensor.twc_demo_pressure
-        wind_speed: sensor.twc_demo_wind_speed
+        condition: sensor.twc_condition_phrase
+        temperature: sensor.twc_temperature
+        temperature_feelslike: sensor.twc_feels_like_temperature
+        humidity: sensor.twc_humidity
+        pressure: sensor.twc_pressure
+        wind_speed: sensor.twc_wind_speed
 - type: grid
   title: Meteoalarm Card
   cards:
@@ -236,7 +236,6 @@ sections:
     title: TWC Alert Data for Future Meteoalarm Adapter
     entities:
     - sensor.twc_alert_count
-    - sensor.twc_demo_alert_summary
 - type: grid
   title: Lovelace Horizon Card
   cards:

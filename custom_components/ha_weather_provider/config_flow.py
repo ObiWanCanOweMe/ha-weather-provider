@@ -13,6 +13,7 @@ from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
+    CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
@@ -146,6 +147,12 @@ class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
                     CONF_ENABLE_TROPICAL_WEATHER,
                     default=self.config_entry.options.get(
                         CONF_ENABLE_TROPICAL_WEATHER, False
+                    ),
+                ): bool,
+                vol.Optional(
+                    CONF_ENABLE_AIR_QUALITY,
+                    default=self.config_entry.options.get(
+                        CONF_ENABLE_AIR_QUALITY, False
                     ),
                 ): bool,
                 vol.Optional(

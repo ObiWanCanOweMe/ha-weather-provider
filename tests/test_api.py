@@ -11,6 +11,7 @@ from yarl import URL
 
 from custom_components.ha_weather_provider import api
 from custom_components.ha_weather_provider.api import (
+    AIR_QUALITY_PATH,
     CURRENT_PATH,
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
@@ -24,6 +25,7 @@ from custom_components.ha_weather_provider.api import (
     TWCRequestError,
     TWCPermissionError,
 )
+from custom_components.ha_weather_provider.const import DEFAULT_AIR_QUALITY_SCALE
 
 
 API_KEY = "secret"
@@ -89,6 +91,24 @@ def _assert_pollen_observation_request(mocked: aioresponses, url: str) -> None:
     assert request.kwargs["params"] == {
         "apiKey": API_KEY,
         "language": LANGUAGE,
+    }
+    assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
+
+
+def _assert_air_quality_request(mocked: aioresponses, url: str) -> None:
+    assert len(mocked.requests) == 1
+    (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
+    assert actual_method == "GET"
+    assert actual_url.scheme == "https"
+    assert actual_url.host == URL(url).host
+    assert actual_url.path == URL(url).path
+    request = calls[0]
+    assert request.kwargs["params"] == {
+        "apiKey": API_KEY,
+        "geocode": f"{LATITUDE},{LONGITUDE}",
+        "language": LANGUAGE,
+        "scale": DEFAULT_AIR_QUALITY_SCALE,
+        "format": "json",
     }
     assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
 
@@ -220,6 +240,21 @@ async def test_async_get_alert_headlines_returns_empty_alerts_for_no_data() -> N
         client = _make_client(session)
         with aioresponses() as mocked:
             mocked.get(_request_url(url, include_units=False), status=204)
+
+            result = await client.async_get_alert_headlines()
+
+    assert result == {"alerts": []}
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_alert_headlines_returns_empty_alerts_for_not_found() -> None:
+    """A 404 alert headline response means there is no alert data for this point."""
+    url = f"{api.BASE_URL}{api.ALERT_HEADLINES_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), status=404)
 
             result = await client.async_get_alert_headlines()
 
@@ -430,6 +465,72 @@ async def test_async_get_tropical_current_position_returns_empty_for_unavailable
             result = await client.async_get_tropical_current_position()
 
     assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_async_get_air_quality_calls_twc_air_quality_endpoint() -> None:
+    """Air quality call returns the payload from the expected endpoint."""
+    url = f"{api.BASE_URL}{AIR_QUALITY_PATH}"
+    payload = {
+        "globalairquality": {
+            "airQualityIndex": 61,
+            "airQualityCategory": "Moderate",
+            "primaryPollutant": "PM2.5",
+        }
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "geocode": f"{LATITUDE},{LONGITUDE}",
+                            "language": LANGUAGE,
+                            "scale": DEFAULT_AIR_QUALITY_SCALE,
+                            "format": "json",
+                        }
+                    )
+                ),
+                payload=payload,
+            )
+
+            result = await client.async_get_air_quality()
+
+    assert result == payload
+    _assert_air_quality_request(mocked, url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 401, 403])
+async def test_async_get_air_quality_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Air quality no-data and entitlement failures should be non-fatal."""
+    url = f"{api.BASE_URL}{AIR_QUALITY_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "geocode": f"{LATITUDE},{LONGITUDE}",
+                            "language": LANGUAGE,
+                            "scale": DEFAULT_AIR_QUALITY_SCALE,
+                            "format": "json",
+                        }
+                    )
+                ),
+                status=status,
+            )
+
+            result = await client.async_get_air_quality()
+
+    assert result == {}
+    _assert_air_quality_request(mocked, url)
 
 
 @pytest.mark.asyncio

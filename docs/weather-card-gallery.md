@@ -6,10 +6,6 @@ Gallery YAML:
 
 - `dashboards/the-weather-company-card-gallery.yaml`
 
-Optional template helper examples:
-
-- `docs/examples/twc-weather-card-gallery-template-sensors.yaml`
-
 Dependency chain reference:
 
 - `docs/weather-card-gallery-dependencies.md`
@@ -24,11 +20,11 @@ The gallery expects this weather entity:
 
 - `weather.twc`
 
-If Home Assistant created a different entity id, replace every `weather.twc` reference in the YAML and template helper examples with the actual entity id before adding the gallery to a dashboard.
+If Home Assistant created a different entity id, replace every `weather.twc` reference in the YAML with the actual entity id before adding the gallery to a dashboard.
 
 ## Phase 1
 
-Phase 1 is repo-only. It adds the gallery YAML, compatibility notes, and optional template helper examples. It does not bundle third-party JavaScript, install HACS, or guarantee every custom card renders before its frontend resource is installed.
+Phase 1 is repo-only. It adds the gallery YAML and compatibility notes. It does not bundle third-party JavaScript, install HACS, or guarantee every custom card renders before its frontend resource is installed.
 
 ## Phase 2
 
@@ -41,7 +37,7 @@ Simple Weather Card v0.8.5 also needs `dashboards/resources/twc-simple-weather-c
 - `Live`: expected to render with built-in Home Assistant and current TWC entities.
 - `Installed via HACS`: verified in the test Home Assistant instance with a HACS-managed frontend resource.
 - `Requires HACS card`: YAML is provided, but the frontend card resource must be installed.
-- `Requires adapter entities`: needs template/helper sensors such as `sensor.twc_demo_temperature`.
+- `Requires adapter entities`: needs optional integration sensors such as `sensor.twc_temperature`.
 - `Requires non-TWC source`: needs `sun.sun`, RainViewer, or another provider; the data is not TWC-backed.
 - `Research needed`: the card may be archived, renamed, incompatible, or may need live testing with the TWC alert model.
 - `Adapter needed`: TWC has relevant source data, but the card expects another integration's entity schema.
@@ -53,31 +49,31 @@ Simple Weather Card v0.8.5 also needs `dashboards/resources/twc-simple-weather-c
 | Home Assistant Weather Forecast Card | `weather-forecast` | Live | Uses `weather.twc` directly |
 | Simple Weather Card | `custom:simple-weather-card` | Installed via HACS | Uses `weather.twc` directly |
 | Hourly Weather Card | `custom:hourly-weather` | Installed via HACS | Uses `weather.twc` hourly forecast |
-| Animated Weather Card | `custom:bom-weather-card` | Requires adapter entities | Uses `sensor.twc_demo_*` current helpers plus integration-provided daily forecast adapter sensors |
+| Animated Weather Card | `custom:bom-weather-card` | Requires adapter entities | Uses optional integration current sensors plus daily forecast adapter sensors |
 | Weather Radar Card | `custom:weather-radar-card` | Requires non-TWC source | Uses RainViewer radar tiles; not TWC-backed |
 | Clock Weather Card | `custom:clock-weather-card` | Installed via HACS | Uses `weather.twc` and `sun.sun` |
 | Meteoalarm Card | Built-in `entities` placeholder | Adapter needed | TWC alert count/summary data needs an adapter before `custom:meteoalarm-card` can render it |
 | Lovelace Horizon Card | `custom:horizon-card` | Requires non-TWC source | Uses Home Assistant sun/moon context; not TWC-backed |
-| Weather Conditions Card | `custom:ha-card-weather-conditions` | Requires adapter entities | Uses core TWC weather values through template sensors |
-| Platinum Weather Card | `custom:platinum-weather-card` | Requires adapter entities | Uses `weather.twc` plus template sensors |
+| Weather Conditions Card | `custom:ha-card-weather-conditions` | Requires adapter entities | Uses core TWC weather values through optional integration sensors |
+| Platinum Weather Card | `custom:platinum-weather-card` | Requires adapter entities | Uses `weather.twc` plus optional integration sensors |
 
 ## Optional Adapter Entities
 
-Some cards expect individual sensor entities instead of a single weather entity. Use `docs/examples/twc-weather-card-gallery-template-sensors.yaml` as a starting point.
+Some cards expect individual sensor entities instead of a single weather entity. Enable the integration's optional extra entities before using the full gallery.
 
 Expected generated entities include:
 
-- `sensor.twc_demo_condition`
-- `sensor.twc_demo_temperature`
-- `sensor.twc_demo_feels_like`
-- `sensor.twc_demo_humidity`
-- `sensor.twc_demo_pressure`
-- `sensor.twc_demo_wind_speed`
-- `sensor.twc_demo_wind_bearing`
-- `sensor.twc_demo_wind_gust`
-- `sensor.twc_demo_alert_summary`
+- `sensor.twc_condition_phrase`
+- `sensor.twc_temperature`
+- `sensor.twc_feels_like_temperature`
+- `sensor.twc_humidity`
+- `sensor.twc_pressure`
+- `sensor.twc_wind_speed`
+- `sensor.twc_wind_bearing`
+- `sensor.twc_wind_gust`
+- `sensor.twc_alert_count`
 
-Enable the integration's optional extra entities if you also want current-condition sensors, compact diagnostic sensors, and daily forecast adapter sensors from the custom integration.
+These are created by the integration's optional extra entities setting, not by dashboard-local template helpers.
 
 The Animated Weather Card forecast rows use the integration's optional daily forecast adapter sensors. Enable optional extra entities to create these forecast entities:
 
@@ -98,7 +94,7 @@ The Lovelace Horizon Card depends on Home Assistant's sun/moon context. The Weat
 
 1. Install any third-party cards you want to render.
 2. Register their frontend resources in Home Assistant.
-3. Add the optional template helpers if you want to test adapter-backed cards.
+3. Enable the integration's optional extra entities if you want to test adapter-backed cards.
 4. Open Home Assistant.
 5. Go to the dashboard raw configuration editor or storage-backed dashboard import path.
 6. Add the contents of `dashboards/the-weather-company-card-gallery.yaml` as a full Sections view configuration.

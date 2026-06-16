@@ -18,6 +18,7 @@ from homeassistant.const import (
 )
 
 from custom_components.ha_weather_provider.const import (
+    CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
@@ -63,6 +64,7 @@ def _coordinator(
     pollen_forecast: dict[str, object] | None = None,
     pollen_observation: dict[str, object] | None = None,
     tropical_current_position: dict[str, object] | None = None,
+    air_quality: dict[str, object] | None = None,
 ) -> SimpleNamespace:
     """Return coordinator-shaped test data for sensor entities."""
     return SimpleNamespace(
@@ -108,6 +110,7 @@ def _coordinator(
             pollen_forecast=pollen_forecast or {},
             pollen_observation=pollen_observation or {},
             tropical_current_position=tropical_current_position or {},
+            air_quality=air_quality or {},
         )
     )
 
@@ -185,6 +188,46 @@ async def test_sensor_setup_adds_tropical_entities_when_tropical_enabled(hass) -
         "entry-id_tropical_active_storms",
         "entry-id_tropical_last_update_time",
         "entry-id_tropical_expiration_time",
+    ]
+
+
+async def test_sensor_setup_adds_air_quality_entities_when_enabled(hass) -> None:
+    """Air quality sensors should be created when the air quality option is enabled."""
+    async_add_entities = Mock()
+    entry = _entry(options={CONF_ENABLE_AIR_QUALITY: True, CONF_EXTRA_ENTITIES: False})
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    entities = async_add_entities.call_args.args[0]
+    assert [entity.unique_id for entity in entities] == [
+        "entry-id_aq_index",
+        "entry-id_aq_category",
+        "entry-id_aq_category_index",
+        "entry-id_aq_category_color",
+        "entry-id_aq_primary_pollutant",
+        "entry-id_aq_expiration_time",
+        "entry-id_aq_source",
+        "entry-id_aq_disclaimer",
+        "entry-id_aq_health_message",
+        "entry-id_aq_no2_amount",
+        "entry-id_aq_no2_index",
+        "entry-id_aq_no2_category",
+        "entry-id_aq_o3_amount",
+        "entry-id_aq_o3_index",
+        "entry-id_aq_o3_category",
+        "entry-id_aq_so2_amount",
+        "entry-id_aq_so2_index",
+        "entry-id_aq_so2_category",
+        "entry-id_aq_pm2_5_amount",
+        "entry-id_aq_pm2_5_index",
+        "entry-id_aq_pm2_5_category",
+        "entry-id_aq_pm10_amount",
+        "entry-id_aq_pm10_index",
+        "entry-id_aq_pm10_category",
+        "entry-id_aq_co_amount",
+        "entry-id_aq_co_index",
+        "entry-id_aq_co_category",
     ]
 
 
@@ -907,3 +950,126 @@ def test_tropical_timestamp_sensor_ignores_offsetless_iso_values() -> None:
     )
 
     assert entity.native_value is None
+
+
+def test_air_quality_sensor_values() -> None:
+    """Air quality sensors should map the documented TWC payload."""
+    coordinator = _coordinator(
+        air_quality={
+            "globalairquality": {
+                "source": "Powered by Copernicus Atmosphere Monitoring Service",
+                "disclaimer": "Preliminary data.",
+                "airQualityIndex": 101,
+                "airQualityCategory": "Unhealthy for Sensitive Groups",
+                "airQualityCategoryIndex": 3,
+                "airQualityCategoryIndexColor": "039963",
+                "primaryPollutant": "PM2.5",
+                "expireTimeGmt": 1521748800,
+                "pollutants": {
+                    "NO2": {
+                        "name": "NO2",
+                        "phrase": "Nitrogen Dioxide",
+                        "amount": 41.4,
+                        "unit": "ug/m3",
+                        "category": "Good",
+                        "categoryIndex": 1,
+                        "index": 21,
+                    },
+                    "PM2.5": {
+                        "name": "PM2.5",
+                        "phrase": "Particulate matter less than 2.5 microns",
+                        "amount": 35,
+                        "unit": "ug/m3",
+                        "category": "Unhealthy for Sensitive Groups",
+                        "categoryIndex": 3,
+                        "index": 101,
+                    },
+                },
+                "messages": {
+                    "General": {
+                        "title": "General",
+                        "text": "Members of sensitive groups may experience effects.",
+                    }
+                },
+            }
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_AIR_QUALITY: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.air_quality_entity_descriptions()
+        ]
+    }
+
+    assert entities["aq_index"].native_value == 101
+    assert entities["aq_category"].native_value == (
+        "Unhealthy for Sensitive Groups"
+    )
+    assert entities["aq_category_index"].native_value == 3
+    assert entities["aq_category_color"].native_value == "039963"
+    assert entities["aq_primary_pollutant"].native_value == "PM2.5"
+    assert entities["aq_expiration_time"].native_value == datetime(
+        2018, 3, 22, 20, 0, tzinfo=UTC
+    )
+    assert (
+        entities["aq_expiration_time"].device_class
+        == SensorDeviceClass.TIMESTAMP
+    )
+    assert entities["aq_source"].native_value == "Available"
+    assert entities["aq_source"].extra_state_attributes == {
+        "source": "Powered by Copernicus Atmosphere Monitoring Service",
+        "disclaimer": "Preliminary data.",
+    }
+    assert entities["aq_disclaimer"].native_value == "Available"
+    assert entities["aq_disclaimer"].extra_state_attributes == {
+        "source": "Powered by Copernicus Atmosphere Monitoring Service",
+        "disclaimer": "Preliminary data.",
+    }
+    assert entities["aq_health_message"].native_value == "General"
+    assert entities["aq_health_message"].extra_state_attributes == {
+        "messages": {
+            "General": {
+                "title": "General",
+                "text": "Members of sensitive groups may experience effects.",
+            }
+        }
+    }
+    assert entities["aq_no2_amount"].native_value == 41.4
+    assert entities["aq_no2_amount"].native_unit_of_measurement == "ug/m3"
+    assert entities["aq_no2_amount"].extra_state_attributes == {
+        "name": "NO2",
+        "phrase": "Nitrogen Dioxide",
+        "unit": "ug/m3",
+    }
+    assert entities["aq_no2_index"].native_value == 21
+    assert entities["aq_no2_category"].native_value == "Good"
+    assert entities["aq_pm2_5_amount"].native_value == 35
+    assert entities["aq_pm2_5_index"].native_value == 101
+    assert entities["aq_pm2_5_category"].native_value == (
+        "Unhealthy for Sensitive Groups"
+    )
+    assert entities["aq_o3_amount"].native_value is None
+
+
+def test_air_quality_sensor_values_are_unavailable_when_payload_is_missing() -> None:
+    """Air quality sensors should stay unavailable when endpoint data is absent."""
+    coordinator = _coordinator(air_quality={})
+    entry = _entry(options={CONF_ENABLE_AIR_QUALITY: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.air_quality_entity_descriptions()
+        ]
+    }
+
+    assert entities["aq_index"].native_value is None
+    assert entities["aq_category"].native_value is None
+    assert entities["aq_expiration_time"].native_value is None
+    assert entities["aq_health_message"].native_value is None
+    assert entities["aq_no2_amount"].native_value is None
+    assert entities["aq_no2_amount"].native_unit_of_measurement is None

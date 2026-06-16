@@ -31,16 +31,14 @@ Simple Weather Card v0.8.5 needs the local `twc-simple-weather-card-compat.js` s
 | --- | --- | --- |
 | Weather entity | `weather.twc` | `ha_weather_provider` integration |
 | Alert count | `sensor.twc_alert_count` | Optional extra entity from this integration |
-| Current adapter helpers | `sensor.twc_demo_*` | Template sensors in `/config/twc_weather_card_gallery_template_sensors.yaml` |
 | Current condition sensors | `sensor.twc_temperature`, `sensor.twc_feels_like_temperature`, `sensor.twc_dew_point`, `sensor.twc_humidity`, `sensor.twc_pressure`, `sensor.twc_pressure_change`, `sensor.twc_pressure_tendency_code`, `sensor.twc_pressure_tendency`, `sensor.twc_cloud_cover`, `sensor.twc_cloud_cover_phrase`, `sensor.twc_cloud_ceiling`, `sensor.twc_uv_index`, `sensor.twc_uv_description`, `sensor.twc_visibility`, `sensor.twc_wind_speed`, `sensor.twc_wind_gust`, `sensor.twc_wind_bearing`, `sensor.twc_precip_amount`, `sensor.twc_condition_phrase`, `sensor.twc_condition_code`, `sensor.twc_sunrise_time`, `sensor.twc_sunset_time` | Optional extra entities from this integration. `sensor.twc_cloud_ceiling` is exposed as a raw numeric value because TWC documentation says the unit varies by unit system, but live testing returned the same value across `e`, `m`, `h`, and `s`. |
 | Daily forecast adapter helpers | `sensor.twc_daily_forecast_day_1_*` through `sensor.twc_daily_forecast_day_5_*` | Optional extra entities from this integration |
 | Pollen sensors | `sensor.twc_pollen_grass_index`, `sensor.twc_pollen_grass_category`, `sensor.twc_pollen_tree_index`, `sensor.twc_pollen_tree_category`, `sensor.twc_pollen_ragweed_index`, `sensor.twc_pollen_ragweed_category`, `sensor.twc_pollen_forecast_time`, `sensor.twc_pollen_expiration_time`, `sensor.twc_pollen_observation_*` | Optional pollen forecast and U.S. pollen observation endpoints from this integration |
 | Tropical weather summary sensors | `sensor.twc_tropical_active_storm_count`, `sensor.twc_tropical_active_storms`, `sensor.twc_tropical_last_update_time`, `sensor.twc_tropical_expiration_time` | Optional tropical current-position endpoint from this integration. The active-storm sensor keeps compact storm summaries in attributes instead of creating per-storm entities. |
+| Air quality sensors | `sensor.twc_aq_index`, `sensor.twc_aq_category`, `sensor.twc_aq_primary_pollutant`, `sensor.twc_aq_*_amount`, `sensor.twc_aq_*_index`, `sensor.twc_aq_*_category` | Optional Air Quality Global endpoint from this integration |
 | Forecasts | Daily and hourly weather forecast APIs | `weather.twc` forecast methods |
 
-The template helpers expose current condition, temperature, feels-like temperature, humidity, pressure, wind speed, wind bearing, wind gust, and alert summary as sensor-style entities for cards that cannot consume a Home Assistant weather entity directly.
-
-The integration's optional extra entities expose current-condition sensors and five days of daily forecast adapter sensors for condition, high, low, precipitation probability, precipitation amount, and summary. A current precipitation-rate sensor is not exposed because the current TWC observation payload used by this integration does not provide a confirmed rate/intensity field.
+The integration's optional extra entities expose current-condition sensors and five days of daily forecast adapter sensors for condition, high, low, precipitation probability, precipitation amount, and summary. These replace the old card-gallery template helper sensors, so persistent entity names should use `sensor.twc_*` rather than a demo-specific namespace. A current precipitation-rate sensor is not exposed because the current TWC observation payload used by this integration does not provide a confirmed rate/intensity field.
 
 ## Card Dependency Chains
 
@@ -50,9 +48,9 @@ The integration's optional extra entities expose current-condition sensors and f
 | Simple Weather Card | HACS `kalkih/simple-weather-card` | `weather.twc` | Installed in test HA; active resource is HACS-managed |
 | Hourly Weather Card | HACS `decompil3d/lovelace-hourly-weather` | `weather.twc` hourly forecast | Installed in test HA; active resource is HACS-managed |
 | Clock Weather Card | HACS `pkissling/clock-weather-card` | `weather.twc`; optional clock/timezone from HA | Installed in test HA; gallery YAML uses `forecast_rows` rather than old `forecast_days` |
-| Custom Animated Weather Card | `DavidFW1960/bom-weather-card` | `sensor.twc_demo_condition`, temperature, apparent temperature, humidity, pressure, wind bearing, wind speed, wind gust; `sensor.twc_daily_forecast_day_N_*`; local weather icon SVG assets | Current values still come from template helpers; forecast rows now use integration-provided adapter sensors |
-| Platinum Weather Card | `Makin-Things/platinum-weather-card` | `weather.twc` plus `sensor.twc_demo_*`; bundled SVG/JS release assets | Some sections need additional entities for UV, rainfall, fire danger, and extended forecast text |
-| Weather Conditions Card | `r-renato/ha-card-weather-conditions` | `sensor.twc_demo_*`; optional `sun.sun`, moon phase, and `sensor.twc_pollen_*` forecast sensors | UV is available from current TWC data; pollen forecast sensors are available when enabled; air quality, marine, lightning, camera, and some alert layers need extra integrations or TWC-derived sensors |
+| Custom Animated Weather Card | `DavidFW1960/bom-weather-card` | `sensor.twc_condition_phrase`, temperature, apparent temperature, humidity, pressure, wind bearing, wind speed, wind gust; `sensor.twc_daily_forecast_day_N_*`; local weather icon SVG assets | Uses integration-provided adapter sensors |
+| Platinum Weather Card | `Makin-Things/platinum-weather-card` | `weather.twc` plus optional `sensor.twc_*` adapter sensors; bundled SVG/JS release assets | Some sections need additional entities for rainfall, fire danger, and extended forecast text |
+| Weather Conditions Card | `r-renato/ha-card-weather-conditions` | optional `sensor.twc_*` current, pollen, and air quality sensors; optional `sun.sun` and moon phase context | Marine, lightning, camera, and some alert layers need extra integrations or TWC-derived sensors |
 | Meteoalarm Card | `MrBartusek/MeteoalarmCard` | Installed frontend resource only | Needs a supported alert integration or a TWC alert adapter before the actual custom card can replace the placeholder |
 | Horizon Card | `rejuvenate/lovelace-horizon-card` | Home Assistant location, `sun`, and optional `moon` integrations | Not TWC-backed; depends on HA sun/moon context. In current Home Assistant builds, Moon is config-entry based and cannot be enabled through YAML. |
 | Weather Radar Card | `jpettitt/weather-radar-card` | External radar tile providers such as RainViewer, NOAA/NWS, or DWD | Not TWC-backed; network tile access required |
@@ -66,7 +64,7 @@ These are worth evaluating for forks or vendored companion cards:
 | Simple Weather Card | Small surface area and direct weather entity consumption; a TWC-focused variant could avoid upstream compatibility churn. |
 | Custom Animated Weather Card | Sensor-heavy configuration maps well to generated TWC adapter sensors, but the card is provider-generic and may need TWC naming defaults. |
 | Platinum Weather Card | Richest demo surface, but has many assets and entity slots. A curated TWC preset or fork could reduce setup friction. |
-| Weather Conditions Card | Good showcase for TWC enrichment. Pollen forecast and U.S. observation sensors are available when enabled; air quality remains separate follow-up work. |
+| Weather Conditions Card | Good showcase for TWC enrichment. Pollen, U.S. pollen observation, and air quality sensors are available when enabled. |
 | Meteoalarm Card | Direct fork is less attractive than building a TWC alert adapter that emits a supported warning schema. |
 
 Weather Radar Card and Horizon Card are less useful as forks for this integration because their primary data is not Weather Company API data.

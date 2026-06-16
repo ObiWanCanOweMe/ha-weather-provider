@@ -13,7 +13,6 @@ SIMPLE_WEATHER_COMPAT_RESOURCE_PATH = Path(
 )
 GALLERY_DOC_PATH = Path("docs/weather-card-gallery.md")
 GALLERY_DEPENDENCY_DOC_PATH = Path("docs/weather-card-gallery-dependencies.md")
-TEMPLATE_SENSOR_PATH = Path("docs/examples/twc-weather-card-gallery-template-sensors.yaml")
 WEATHER_ENTITY_ID = "weather.twc"
 
 ARTICLE_CARD_NAMES = (
@@ -114,6 +113,7 @@ def test_weather_card_gallery_references_twc_entity() -> None:
     yaml_text = GALLERY_DASHBOARD_PATH.read_text(encoding="utf-8")
 
     assert WEATHER_ENTITY_ID in yaml_text
+    assert "twc_demo" not in yaml_text
     assert "weather.forecast_home" not in yaml_text
     assert "weather.forecast_home_hourly" not in yaml_text
 
@@ -171,7 +171,7 @@ def test_meteoalarm_section_does_not_instantiate_invalid_twc_alert_config() -> N
 
     assert "custom:meteoalarm-card" not in card_types
     assert "sensor.twc_alert_count" in yaml_text
-    assert "sensor.twc_demo_alert_summary" in yaml_text
+    assert yaml_text.count("sensor.twc_alert_count") == 1
 
 
 def test_weather_conditions_card_uses_supported_present_schema() -> None:
@@ -187,10 +187,10 @@ def test_weather_conditions_card_uses_supported_present_schema() -> None:
     assert weather_config["animation"] is True
     assert weather_config["sun"] == "sun.sun"
     assert "sun" not in weather_config["present"]
-    assert weather_config["present"]["condition"] == "sensor.twc_demo_condition"
+    assert weather_config["present"]["condition"] == "sensor.twc_condition_phrase"
     assert (
         weather_config["present"]["temperature_feelslike"]
-        == "sensor.twc_demo_feels_like"
+        == "sensor.twc_feels_like_temperature"
     )
 
 
@@ -199,18 +199,15 @@ def test_animated_weather_card_uses_complete_minimal_schema() -> None:
     cards = _walk_cards(_section_cards())
     animated_card = next(card for card in cards if card.get("type") == "custom:bom-weather-card")
 
-    for field in (
-        "entity_current_conditions",
-        "entity_current_text",
-        "entity_temperature",
-        "entity_apparent_temp",
-        "entity_humidity",
-        "entity_pressure",
-        "entity_wind_bearing",
-        "entity_wind_speed",
-        "entity_wind_gust",
-    ):
-        assert animated_card[field].startswith("sensor.twc_demo_")
+    assert animated_card["entity_current_conditions"] == "sensor.twc_condition_phrase"
+    assert animated_card["entity_current_text"] == "sensor.twc_condition_phrase"
+    assert animated_card["entity_temperature"] == "sensor.twc_temperature"
+    assert animated_card["entity_apparent_temp"] == "sensor.twc_feels_like_temperature"
+    assert animated_card["entity_humidity"] == "sensor.twc_humidity"
+    assert animated_card["entity_pressure"] == "sensor.twc_pressure"
+    assert animated_card["entity_wind_bearing"] == "sensor.twc_wind_bearing"
+    assert animated_card["entity_wind_speed"] == "sensor.twc_wind_speed"
+    assert animated_card["entity_wind_gust"] == "sensor.twc_wind_gust"
 
     for index in range(1, 6):
         prefix = f"sensor.twc_daily_forecast_day_{index}"
@@ -240,20 +237,6 @@ def test_clock_weather_card_uses_current_forecast_rows_option() -> None:
     assert clock_card["forecast_rows"] == 5
 
 
-def test_weather_card_gallery_template_sensor_examples_parse() -> None:
-    """Adapter helper YAML should parse and expose predictable entity names."""
-    with TEMPLATE_SENSOR_PATH.open(encoding="utf-8") as file:
-        data = yaml.safe_load(file)
-
-    assert isinstance(data, dict)
-    yaml_text = TEMPLATE_SENSOR_PATH.read_text(encoding="utf-8")
-    assert "sensor.twc_demo_condition" in yaml_text
-    assert "twc_demo_temperature" in yaml_text
-    assert "twc_demo_feels_like" in yaml_text
-    assert "twc_demo_wind_gust" in yaml_text
-    assert WEATHER_ENTITY_ID in yaml_text
-
-
 def test_weather_card_gallery_docs_explain_setup_boundaries() -> None:
     """Docs should explain Phase 1 repo artifacts versus live HACS setup."""
     docs_text = GALLERY_DOC_PATH.read_text(encoding="utf-8")
@@ -263,6 +246,7 @@ def test_weather_card_gallery_docs_explain_setup_boundaries() -> None:
     assert "HACS" in docs_text
     assert "does not bundle third-party JavaScript" in docs_text
     assert "replace every `weather.twc` reference" in docs_text
+    assert "optional extra entities" in docs_text
     assert "Sections view" in docs_text
 
 

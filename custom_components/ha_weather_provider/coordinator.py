@@ -37,6 +37,7 @@ class TWCWeatherData:
     pollen_forecast: dict[str, Any] = field(default_factory=dict)
     pollen_observation: dict[str, Any] = field(default_factory=dict)
     tropical_current_position: dict[str, Any] = field(default_factory=dict)
+    air_quality: dict[str, Any] = field(default_factory=dict)
 
 
 class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
@@ -49,6 +50,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         *,
         pollen_enabled: bool = False,
         tropical_enabled: bool = False,
+        air_quality_enabled: bool = False,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         super().__init__(
@@ -61,6 +63,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         self.client = client
         self.pollen_enabled = pollen_enabled
         self.tropical_enabled = tropical_enabled
+        self.air_quality_enabled = air_quality_enabled
 
     async def _async_update_data(self) -> TWCWeatherData:
         """Fetch current conditions and 7-day daily forecast."""
@@ -99,6 +102,13 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
                     "Optional TWC tropical current-position endpoint is unavailable"
                 )
 
+        air_quality: dict[str, Any] = {}
+        if self.air_quality_enabled:
+            try:
+                air_quality = await self.client.async_get_air_quality()
+            except TWCError:
+                _LOGGER.debug("Optional TWC air quality endpoint is unavailable")
+
         return TWCWeatherData(
             current=current,
             daily_forecast=daily_forecast,
@@ -107,4 +117,5 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
             pollen_forecast=pollen_forecast,
             pollen_observation=pollen_observation,
             tropical_current_position=tropical_current_position,
+            air_quality=air_quality,
         )

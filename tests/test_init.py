@@ -13,6 +13,7 @@ from custom_components.ha_weather_provider import async_migrate_entry, async_set
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
+    CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_HOURLY_FORECAST_DURATION,
@@ -301,6 +302,108 @@ async def test_async_setup_entry_requires_bool_true_for_tropical_option(hass):
         await async_setup_entry(hass, entry)
 
     assert mock_coordinator.call_args.kwargs["tropical_enabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_passes_air_quality_option_to_coordinator(hass):
+    """Setup should pass the selected air quality option into the coordinator."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_ENABLE_AIR_QUALITY: True},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["air_quality_enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_disables_air_quality_by_default(hass):
+    """Setup should leave air quality disabled unless selected."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["air_quality_enabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_requires_bool_true_for_air_quality_option(hass):
+    """Setup should not enable air quality for truthy non-bool values."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_ENABLE_AIR_QUALITY: "true"},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["air_quality_enabled"] is False
 
 
 @pytest.mark.asyncio

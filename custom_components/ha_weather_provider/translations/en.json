@@ -31,6 +31,7 @@
         "title": "Options",
         "data": {
           "daily_forecast_duration": "Daily forecast duration",
+          "enable_air_quality": "Enable air quality",
           "enable_pollen": "Enable pollen forecast",
           "enable_tropical_weather": "Enable tropical weather",
           "extra_entities": "Create optional extra entities",
@@ -39,6 +40,7 @@
         },
         "data_description": {
           "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
+          "enable_air_quality": "Requests The Weather Company Global Air Quality endpoint and creates air quality sensors when data is available.",
           "enable_pollen": "Requests The Weather Company pollen forecast and U.S. observation endpoints and creates pollen sensors when data is available.",
           "enable_tropical_weather": "Requests The Weather Company tropical current-position endpoint and creates compact active storm summary sensors when data is available.",
           "extra_entities": "Adds companion sensors for current conditions, rolling precipitation and snow amounts, alert count, observation time, integration version, and daily forecast adapter values.",

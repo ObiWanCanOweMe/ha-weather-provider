@@ -18,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
@@ -44,6 +45,7 @@ class TWCSensorEntityDescription(SensorEntityDescription, frozen_or_thawed=True)
 
     value_fn: Callable[[TWCWeatherData], Any]
     unit_key: str | None = None
+    unit_fn: Callable[[TWCWeatherData], str | None] | None = None
     attr_fn: Callable[[TWCWeatherData], dict[str, Any]] | None = None
 
 
@@ -574,6 +576,206 @@ def _tropical_storm_attributes(data: TWCWeatherData) -> dict[str, Any]:
     return {"storms": _tropical_storm_summaries(data)}
 
 
+def _air_quality_payload(data: TWCWeatherData) -> dict[str, Any]:
+    """Return the TWC global air quality payload."""
+    payload = data.air_quality.get("globalairquality")
+    if isinstance(payload, dict):
+        return payload
+    return data.air_quality if isinstance(data.air_quality, dict) else {}
+
+
+def _number_from_value(value: Any) -> int | float | None:
+    """Return a numeric payload value."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    return int(numeric) if numeric.is_integer() else numeric
+
+
+def _air_quality_value(data: TWCWeatherData, key: str) -> Any:
+    """Return a non-empty air quality payload value."""
+    return _value(_air_quality_payload(data), key)
+
+
+def _air_quality_numeric_value(data: TWCWeatherData, key: str) -> int | float | None:
+    """Return a numeric air quality payload value."""
+    return _number_from_value(_air_quality_value(data, key))
+
+
+def _air_quality_expiration_time(data: TWCWeatherData) -> datetime | None:
+    """Return the air quality expiration time."""
+    return _timestamp_from_epoch(_air_quality_value(data, "expireTimeGmt"))
+
+
+def _air_quality_messages(data: TWCWeatherData) -> dict[str, Any]:
+    """Return air quality health recommendation messages."""
+    messages = _air_quality_payload(data).get("messages")
+    return messages if isinstance(messages, dict) else {}
+
+
+def _air_quality_health_message(data: TWCWeatherData) -> Any:
+    """Return the first useful air quality health recommendation text."""
+    messages = _air_quality_messages(data)
+    general = messages.get("General")
+    if isinstance(general, dict):
+        return _first_present(general.get("text"), general.get("title"))
+    for message in messages.values():
+        if isinstance(message, dict):
+            text = _first_present(message.get("text"), message.get("title"))
+            if text is not None:
+                return text
+    return None
+
+
+def _air_quality_message_attributes(data: TWCWeatherData) -> dict[str, Any]:
+    """Return all air quality health recommendation messages."""
+    return {"messages": _air_quality_messages(data)}
+
+
+def _air_quality_available_value(data: TWCWeatherData, key: str) -> str | None:
+    """Return an availability state for long air quality text fields."""
+    return "Available" if _air_quality_value(data, key) is not None else None
+
+
+def _air_quality_text_attributes(data: TWCWeatherData) -> dict[str, Any]:
+    """Return long air quality attribution and advisory text as attributes."""
+    payload = _air_quality_payload(data)
+    return {
+        key: value
+        for key, value in {
+            "source": payload.get("source"),
+            "disclaimer": payload.get("disclaimer"),
+        }.items()
+        if _present(value)
+    }
+
+
+def _air_quality_health_message_state(data: TWCWeatherData) -> Any:
+    """Return a short health-message state that fits Home Assistant limits."""
+    messages = _air_quality_messages(data)
+    general = messages.get("General")
+    if isinstance(general, dict):
+        return _first_present(general.get("title"), "Available")
+    return "Available" if _air_quality_health_message(data) is not None else None
+
+
+def _air_quality_pollutants(data: TWCWeatherData) -> dict[str, Any]:
+    """Return air quality pollutant details."""
+    pollutants = _air_quality_payload(data).get("pollutants")
+    return pollutants if isinstance(pollutants, dict) else {}
+
+
+def _air_quality_pollutant(
+    data: TWCWeatherData, pollutant: str
+) -> dict[str, Any]:
+    """Return one air quality pollutant detail payload."""
+    value = _air_quality_pollutants(data).get(pollutant)
+    return value if isinstance(value, dict) else {}
+
+
+def _air_quality_pollutant_value(
+    data: TWCWeatherData, pollutant: str, key: str
+) -> Any:
+    """Return one non-empty air quality pollutant value."""
+    return _value(_air_quality_pollutant(data, pollutant), key)
+
+
+def _air_quality_pollutant_numeric_value(
+    data: TWCWeatherData, pollutant: str, key: str
+) -> int | float | None:
+    """Return one numeric air quality pollutant value."""
+    return _number_from_value(_air_quality_pollutant_value(data, pollutant, key))
+
+
+def _air_quality_pollutant_unit(
+    data: TWCWeatherData, pollutant: str
+) -> str | None:
+    """Return one pollutant amount unit from the TWC payload."""
+    unit = _air_quality_pollutant_value(data, pollutant, "unit")
+    return unit if isinstance(unit, str) else None
+
+
+def _air_quality_pollutant_attributes(
+    data: TWCWeatherData, pollutant: str
+) -> dict[str, Any]:
+    """Return descriptive pollutant attributes."""
+    payload = _air_quality_pollutant(data, pollutant)
+    return {
+        key: value
+        for key, value in {
+            "name": payload.get("name"),
+            "phrase": payload.get("phrase"),
+            "unit": payload.get("unit"),
+        }.items()
+        if _present(value)
+    }
+
+
+def _air_quality_pollutant_sensor_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
+    """Return air quality pollutant detail sensors."""
+    descriptions: list[TWCSensorEntityDescription] = []
+    for pollutant, sensor_key, sensor_name in (
+        ("NO2", "no2", "NO2"),
+        ("O3", "o3", "O3"),
+        ("SO2", "so2", "SO2"),
+        ("PM2.5", "pm2_5", "PM2.5"),
+        ("PM10", "pm10", "PM10"),
+        ("CO", "co", "CO"),
+    ):
+        descriptions.extend(
+            (
+                TWCSensorEntityDescription(
+                    key=f"aq_{sensor_key}_amount",
+                    name=f"AQ {sensor_name} Amount",
+                    icon="mdi:molecule",
+                    state_class=SensorStateClass.MEASUREMENT,
+                    value_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_numeric_value(
+                            data, pollutant, "amount"
+                        )
+                    ),
+                    unit_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_unit(data, pollutant)
+                    ),
+                    attr_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_attributes(data, pollutant)
+                    ),
+                ),
+                TWCSensorEntityDescription(
+                    key=f"aq_{sensor_key}_index",
+                    name=f"AQ {sensor_name} Index",
+                    icon="mdi:air-filter",
+                    state_class=SensorStateClass.MEASUREMENT,
+                    value_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_numeric_value(data, pollutant, "index")
+                    ),
+                    attr_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_attributes(data, pollutant)
+                    ),
+                ),
+                TWCSensorEntityDescription(
+                    key=f"aq_{sensor_key}_category",
+                    name=f"AQ {sensor_name} Category",
+                    icon="mdi:air-filter",
+                    value_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_value(data, pollutant, "category")
+                    ),
+                    attr_fn=lambda data, pollutant=pollutant: (
+                        _air_quality_pollutant_attributes(data, pollutant)
+                    ),
+                ),
+            )
+        )
+    return tuple(descriptions)
+
+
 def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
     """Return five days of card-friendly daily forecast adapter sensors."""
     descriptions: list[TWCSensorEntityDescription] = []
@@ -1010,6 +1212,74 @@ TROPICAL_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
 )
 
 
+AIR_QUALITY_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
+    TWCSensorEntityDescription(
+        key="aq_index",
+        name="AQ Index",
+        icon="mdi:air-filter",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _air_quality_numeric_value(data, "airQualityIndex"),
+    ),
+    TWCSensorEntityDescription(
+        key="aq_category",
+        name="AQ Category",
+        icon="mdi:air-filter",
+        value_fn=lambda data: _air_quality_value(data, "airQualityCategory"),
+    ),
+    TWCSensorEntityDescription(
+        key="aq_category_index",
+        name="AQ Category Index",
+        icon="mdi:air-filter",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _air_quality_numeric_value(
+            data, "airQualityCategoryIndex"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="aq_category_color",
+        name="AQ Category Color",
+        icon="mdi:palette",
+        value_fn=lambda data: _air_quality_value(
+            data, "airQualityCategoryIndexColor"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="aq_primary_pollutant",
+        name="AQ Primary Pollutant",
+        icon="mdi:molecule",
+        value_fn=lambda data: _air_quality_value(data, "primaryPollutant"),
+    ),
+    TWCSensorEntityDescription(
+        key="aq_expiration_time",
+        name="AQ Expiration Time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_air_quality_expiration_time,
+    ),
+    TWCSensorEntityDescription(
+        key="aq_source",
+        name="AQ Source",
+        icon="mdi:database-eye",
+        value_fn=lambda data: _air_quality_available_value(data, "source"),
+        attr_fn=_air_quality_text_attributes,
+    ),
+    TWCSensorEntityDescription(
+        key="aq_disclaimer",
+        name="AQ Disclaimer",
+        icon="mdi:text-box-outline",
+        value_fn=lambda data: _air_quality_available_value(data, "disclaimer"),
+        attr_fn=_air_quality_text_attributes,
+    ),
+    TWCSensorEntityDescription(
+        key="aq_health_message",
+        name="AQ Health Message",
+        icon="mdi:message-alert-outline",
+        value_fn=_air_quality_health_message_state,
+        attr_fn=_air_quality_message_attributes,
+    ),
+    *_air_quality_pollutant_sensor_descriptions(),
+)
+
+
 COMPACT_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
     TWCSensorEntityDescription(
         key="alert_count",
@@ -1263,6 +1533,8 @@ async def async_setup_entry(
         descriptions.extend(POLLEN_SENSOR_DESCRIPTIONS)
     if entry.options.get(CONF_ENABLE_TROPICAL_WEATHER, False):
         descriptions.extend(TROPICAL_SENSOR_DESCRIPTIONS)
+    if entry.options.get(CONF_ENABLE_AIR_QUALITY, False):
+        descriptions.extend(AIR_QUALITY_SENSOR_DESCRIPTIONS)
     if not descriptions:
         return
 
@@ -1308,6 +1580,11 @@ class TWCSensorEntity(CoordinatorEntity[TWCWeatherCoordinator], SensorEntity):
         """Return optional TWC tropical sensor descriptions."""
         return TROPICAL_SENSOR_DESCRIPTIONS
 
+    @staticmethod
+    def air_quality_entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
+        """Return optional TWC air quality sensor descriptions."""
+        return AIR_QUALITY_SENSOR_DESCRIPTIONS
+
     @property
     def native_value(self) -> Any:
         """Return the current sensor value."""
@@ -1323,6 +1600,8 @@ class TWCSensorEntity(CoordinatorEntity[TWCWeatherCoordinator], SensorEntity):
     @property
     def native_unit_of_measurement(self) -> str | None:
         """Return the sensor unit, when the value has one."""
+        if self.entity_description.unit_fn is not None:
+            return self.entity_description.unit_fn(self.coordinator.data)
         if self.entity_description.unit_key is None:
             return None
         if self.entity_description.unit_key == "degree":

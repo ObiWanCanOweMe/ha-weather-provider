@@ -9,6 +9,7 @@ import aiohttp
 from aiohttp import ClientSession
 
 from .const import (
+    DEFAULT_AIR_QUALITY_SCALE,
     DEFAULT_DAILY_FORECAST_DURATION,
     DEFAULT_HOURLY_FORECAST_DURATION,
     DEFAULT_POLLEN_FORECAST_DURATION,
@@ -27,6 +28,7 @@ POLLEN_OBSERVATION_PATH = (
     "/v1/geocode/{latitude}/{longitude}/observations/pollen.json"
 )
 TROPICAL_CURRENT_POSITION_PATH = "/v2/tropical/currentposition"
+AIR_QUALITY_PATH = "/v3/wx/globalAirQuality"
 
 
 class TWCError(Exception):
@@ -115,6 +117,16 @@ class TWCClient:
             "nautical": "false",
         }
 
+    @property
+    def _air_quality_query_params(self) -> dict[str, str]:
+        return {
+            "apiKey": self._api_key,
+            "geocode": f"{self._latitude},{self._longitude}",
+            "language": self._language,
+            "scale": DEFAULT_AIR_QUALITY_SCALE,
+            "format": "json",
+        }
+
     async def async_get_current_conditions(self) -> dict[str, Any]:
         """Return current conditions."""
         return await self._async_get_json(CURRENT_PATH, params=self._weather_query_params)
@@ -137,7 +149,9 @@ class TWCClient:
         """Return active weather alert headlines."""
         try:
             return await self._async_get_json(
-                ALERT_HEADLINES_PATH, params=self._alert_query_params
+                ALERT_HEADLINES_PATH,
+                params=self._alert_query_params,
+                no_data_statuses={404},
             )
         except TWCNoDataError:
             return {"alerts": []}
@@ -173,7 +187,22 @@ class TWCClient:
         except (TWCAuthError, TWCNoDataError, TWCPermissionError):
             return {}
 
-    async def _async_get_json(self, path: str, *, params: dict[str, str]) -> dict[str, Any]:
+    async def async_get_air_quality(self) -> dict[str, Any]:
+        """Return global air quality data, when the endpoint is available."""
+        try:
+            return await self._async_get_json(
+                AIR_QUALITY_PATH, params=self._air_quality_query_params
+            )
+        except (TWCAuthError, TWCNoDataError, TWCPermissionError):
+            return {}
+
+    async def _async_get_json(
+        self,
+        path: str,
+        *,
+        params: dict[str, str],
+        no_data_statuses: set[int] | None = None,
+    ) -> dict[str, Any]:
         url = f"{BASE_URL}{path}"
         try:
             async with self._session.get(
@@ -181,6 +210,8 @@ class TWCClient:
                 params=params,
                 headers={"Accept-Encoding": "gzip"},
             ) as response:
+                if no_data_statuses and response.status in no_data_statuses:
+                    raise TWCNoDataError("TWC returned no data")
                 self._raise_for_status(response.status)
                 payload = await response.json(content_type=None)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
