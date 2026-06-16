@@ -44,7 +44,7 @@ HACS does not support GitLab-hosted custom repositories. Do not use the `git.ken
 7. Restart Home Assistant.
 8. Go to **Settings** > **Devices & services**.
 9. Choose **Add integration** and search for **HA Weather Provider**.
-10. Enter your TWC API key, latitude, longitude, units, and language.
+10. Enter your TWC API key, latitude, longitude, units, language, and any optional entity groups you want created during setup.
 
 After setup, Home Assistant should create the weather entity as:
 
@@ -72,7 +72,7 @@ Use this path when HACS is not available.
 3. Restart Home Assistant.
 4. Go to **Settings** > **Devices & services**.
 5. Choose **Add integration** and search for **HA Weather Provider**.
-6. Enter your TWC API key, latitude, longitude, units, and language.
+6. Enter your TWC API key, latitude, longitude, units, language, and any optional entity groups you want created during setup.
 
 To update manually, replace the existing `custom_components/ha_weather_provider` directory with the newer version and restart Home Assistant.
 
@@ -85,12 +85,13 @@ The config flow asks for:
 - **Longitude**: Decimal degrees. East is positive, west is negative.
 - **Units**: TWC unit system.
 - **Language**: TWC response language.
+- **Install options**: Forecast durations, update interval, optional extra entities, pollen, air quality, and tropical weather.
 
 The integration intentionally asks for latitude and longitude instead of only using Home Assistant's configured location, which makes it easy to demo or monitor a specific place.
 
 ## Options
 
-Open the integration options from **Settings** > **Devices & services** after setup.
+These choices are available during initial setup and can be changed later from **Settings** > **Devices & services**.
 
 Available options include:
 

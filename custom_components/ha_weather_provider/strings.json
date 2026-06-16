@@ -6,14 +6,28 @@
         "description": "Set up The Weather Company weather data.",
         "data": {
           "api_key": "API Key",
+          "daily_forecast_duration": "Daily forecast duration",
+          "enable_air_quality": "Enable air quality",
+          "enable_pollen": "Enable pollen forecast",
+          "enable_tropical_weather": "Enable tropical weather",
+          "extra_entities": "Create optional extra entities",
+          "hourly_forecast_duration": "Hourly forecast duration",
           "latitude": "Latitude",
           "longitude": "Longitude",
+          "update_interval_minutes": "Update interval",
           "units": "Units",
           "language": "Language"
         },
         "data_description": {
+          "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
+          "enable_air_quality": "Requests The Weather Company Global Air Quality endpoint and creates air quality sensors when data is available.",
+          "enable_pollen": "Requests The Weather Company pollen forecast and U.S. observation endpoints and creates pollen sensors when data is available.",
+          "enable_tropical_weather": "Requests The Weather Company tropical current-position endpoint and creates compact active storm summary sensors when data is available.",
+          "extra_entities": "Adds companion sensors for current conditions, rolling precipitation and snow amounts, alert count, observation time, integration version, and daily forecast adapter values.",
+          "hourly_forecast_duration": "The Weather Company hourly forecast endpoint to request.",
           "latitude": "Use decimal degrees. North is positive, south is negative.",
-          "longitude": "Use decimal degrees. East is positive, west is negative."
+          "longitude": "Use decimal degrees. East is positive, west is negative.",
+          "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
         }
       }
     },

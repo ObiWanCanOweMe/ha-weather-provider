@@ -42,6 +42,105 @@ def _validate_coordinates(latitude: float, longitude: float) -> bool:
     return -90 <= latitude <= 90 and -180 <= longitude <= 180
 
 
+def _flow_options_from_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Return setup options from user input with defaults applied."""
+    return {
+        CONF_DAILY_FORECAST_DURATION: user_input.get(
+            CONF_DAILY_FORECAST_DURATION,
+            DEFAULT_DAILY_FORECAST_DURATION,
+        ),
+        CONF_EXTRA_ENTITIES: user_input.get(CONF_EXTRA_ENTITIES, False),
+        CONF_ENABLE_POLLEN: user_input.get(CONF_ENABLE_POLLEN, False),
+        CONF_ENABLE_TROPICAL_WEATHER: user_input.get(
+            CONF_ENABLE_TROPICAL_WEATHER,
+            False,
+        ),
+        CONF_ENABLE_AIR_QUALITY: user_input.get(CONF_ENABLE_AIR_QUALITY, False),
+        CONF_HOURLY_FORECAST_DURATION: user_input.get(
+            CONF_HOURLY_FORECAST_DURATION,
+            DEFAULT_HOURLY_FORECAST_DURATION,
+        ),
+        CONF_UPDATE_INTERVAL_MINUTES: user_input.get(
+            CONF_UPDATE_INTERVAL_MINUTES,
+            DEFAULT_UPDATE_INTERVAL_MINUTES,
+        ),
+    }
+
+
+def _setup_schema() -> vol.Schema:
+    """Return the initial setup schema."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_API_KEY): str,
+            vol.Required(CONF_LATITUDE): vol.Coerce(float),
+            vol.Required(CONF_LONGITUDE): vol.Coerce(float),
+            vol.Required(CONF_UNITS, default=DEFAULT_UNITS): vol.In(TWC_UNITS),
+            vol.Required(CONF_LANGUAGE, default=DEFAULT_LANGUAGE): str,
+            vol.Optional(
+                CONF_DAILY_FORECAST_DURATION,
+                default=DEFAULT_DAILY_FORECAST_DURATION,
+            ): vol.In(DAILY_FORECAST_DURATIONS),
+            vol.Optional(CONF_EXTRA_ENTITIES, default=False): bool,
+            vol.Optional(CONF_ENABLE_POLLEN, default=False): bool,
+            vol.Optional(CONF_ENABLE_TROPICAL_WEATHER, default=False): bool,
+            vol.Optional(CONF_ENABLE_AIR_QUALITY, default=False): bool,
+            vol.Optional(
+                CONF_HOURLY_FORECAST_DURATION,
+                default=DEFAULT_HOURLY_FORECAST_DURATION,
+            ): vol.In(HOURLY_FORECAST_DURATIONS),
+            vol.Optional(
+                CONF_UPDATE_INTERVAL_MINUTES,
+                default=DEFAULT_UPDATE_INTERVAL_MINUTES,
+            ): vol.In(UPDATE_INTERVAL_MINUTES),
+        }
+    )
+
+
+def _options_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
+    """Return the options schema."""
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_DAILY_FORECAST_DURATION,
+                default=config_entry.options.get(
+                    CONF_DAILY_FORECAST_DURATION,
+                    DEFAULT_DAILY_FORECAST_DURATION,
+                ),
+            ): vol.In(DAILY_FORECAST_DURATIONS),
+            vol.Optional(
+                CONF_EXTRA_ENTITIES,
+                default=config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+            ): bool,
+            vol.Optional(
+                CONF_ENABLE_POLLEN,
+                default=config_entry.options.get(CONF_ENABLE_POLLEN, False),
+            ): bool,
+            vol.Optional(
+                CONF_ENABLE_TROPICAL_WEATHER,
+                default=config_entry.options.get(CONF_ENABLE_TROPICAL_WEATHER, False),
+            ): bool,
+            vol.Optional(
+                CONF_ENABLE_AIR_QUALITY,
+                default=config_entry.options.get(CONF_ENABLE_AIR_QUALITY, False),
+            ): bool,
+            vol.Optional(
+                CONF_HOURLY_FORECAST_DURATION,
+                default=config_entry.options.get(
+                    CONF_HOURLY_FORECAST_DURATION,
+                    DEFAULT_HOURLY_FORECAST_DURATION,
+                ),
+            ): vol.In(HOURLY_FORECAST_DURATIONS),
+            vol.Optional(
+                CONF_UPDATE_INTERVAL_MINUTES,
+                default=config_entry.options.get(
+                    CONF_UPDATE_INTERVAL_MINUTES,
+                    DEFAULT_UPDATE_INTERVAL_MINUTES,
+                ),
+            ): vol.In(UPDATE_INTERVAL_MINUTES),
+        }
+    )
+
+
 class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for HA Weather Provider."""
 
@@ -65,6 +164,7 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             longitude = float(user_input[CONF_LONGITUDE])
             units = user_input[CONF_UNITS]
             language = user_input[CONF_LANGUAGE].strip() or DEFAULT_LANGUAGE
+            options = _flow_options_from_input(user_input)
 
             if not _validate_coordinates(latitude, longitude):
                 errors["base"] = "invalid_coordinates"
@@ -79,6 +179,8 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     longitude=longitude,
                     units=units,
                     language=language,
+                    daily_forecast_duration=options[CONF_DAILY_FORECAST_DURATION],
+                    hourly_forecast_duration=options[CONF_HOURLY_FORECAST_DURATION],
                 )
                 try:
                     await client.async_get_current_conditions()
@@ -102,18 +204,14 @@ class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_create_entry(
                         title=DISPLAY_NAME,
                         data=data,
+                        options=options,
                     )
 
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_API_KEY): str,
-                vol.Required(CONF_LATITUDE): vol.Coerce(float),
-                vol.Required(CONF_LONGITUDE): vol.Coerce(float),
-                vol.Required(CONF_UNITS, default=DEFAULT_UNITS): vol.In(TWC_UNITS),
-                vol.Required(CONF_LANGUAGE, default=DEFAULT_LANGUAGE): str,
-            }
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_setup_schema(),
+            errors=errors,
         )
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
 
 class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
@@ -126,49 +224,7 @@ class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_DAILY_FORECAST_DURATION,
-                    default=self.config_entry.options.get(
-                        CONF_DAILY_FORECAST_DURATION,
-                        DEFAULT_DAILY_FORECAST_DURATION,
-                    ),
-                ): vol.In(DAILY_FORECAST_DURATIONS),
-                vol.Optional(
-                    CONF_EXTRA_ENTITIES,
-                    default=self.config_entry.options.get(CONF_EXTRA_ENTITIES, False),
-                ): bool,
-                vol.Optional(
-                    CONF_ENABLE_POLLEN,
-                    default=self.config_entry.options.get(CONF_ENABLE_POLLEN, False),
-                ): bool,
-                vol.Optional(
-                    CONF_ENABLE_TROPICAL_WEATHER,
-                    default=self.config_entry.options.get(
-                        CONF_ENABLE_TROPICAL_WEATHER, False
-                    ),
-                ): bool,
-                vol.Optional(
-                    CONF_ENABLE_AIR_QUALITY,
-                    default=self.config_entry.options.get(
-                        CONF_ENABLE_AIR_QUALITY, False
-                    ),
-                ): bool,
-                vol.Optional(
-                    CONF_HOURLY_FORECAST_DURATION,
-                    default=self.config_entry.options.get(
-                        CONF_HOURLY_FORECAST_DURATION,
-                        DEFAULT_HOURLY_FORECAST_DURATION,
-                    ),
-                ): vol.In(HOURLY_FORECAST_DURATIONS),
-                vol.Optional(
-                    CONF_UPDATE_INTERVAL_MINUTES,
-                    default=self.config_entry.options.get(
-                        CONF_UPDATE_INTERVAL_MINUTES,
-                        DEFAULT_UPDATE_INTERVAL_MINUTES,
-                    ),
-                ): vol.In(UPDATE_INTERVAL_MINUTES),
-            }
+        return self.async_show_form(
+            step_id="init",
+            data_schema=_options_schema(self.config_entry),
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
