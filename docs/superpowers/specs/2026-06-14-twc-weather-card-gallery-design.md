@@ -51,11 +51,11 @@ Primary TWC-backed sources:
 - `weather.twc`.
 - Weather attributes on `weather.twc`, including current conditions, daily forecast support, hourly forecast support, alert summaries, wind gust, UV index, cloud cover, humidity, pressure, visibility, and integration version.
 - Optional companion sensors when the integration option is enabled:
-  - `sensor.the_weather_company_alert_count`
-  - `sensor.the_weather_company_condition_phrase`
-  - `sensor.the_weather_company_observation_time`
-  - `sensor.the_weather_company_integration_version`
-  - `sensor.the_weather_company_wind_gust`
+  - `sensor.twc_alert_count`
+  - `sensor.twc_condition_phrase`
+  - `sensor.twc_observation_time`
+  - `sensor.twc_integration_version`
+  - `sensor.twc_wind_gust`
 
 Allowed non-TWC sources:
 
@@ -115,7 +115,7 @@ Content:
 
 - Current state from `weather.twc`.
 - Temperature and feels-like value.
-- Alert status from `weather.twc` or `sensor.the_weather_company_alert_count`.
+- Alert status from `weather.twc` or `sensor.twc_alert_count`.
 - Integration release version.
 - A short note that third-party cards below are configured against TWC entities where possible.
 

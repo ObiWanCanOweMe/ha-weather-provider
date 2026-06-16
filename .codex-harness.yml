@@ -14,3 +14,10 @@ gitlab:
   path: my-projects/ha-weather-provider
 milestones:
   - Hourly Forecast
+  - Air Quality
+  - Pollen
+  - Astronomy and Moon Data
+  - Lightning Proximity
+  - Lifestyle Indices
+  - Tropical Weather
+  - Snow and Ski Conditions

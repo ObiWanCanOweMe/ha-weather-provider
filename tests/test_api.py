@@ -14,6 +14,9 @@ from custom_components.ha_weather_provider.api import (
     CURRENT_PATH,
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
+    POLLEN_FORECAST_PATH,
+    POLLEN_OBSERVATION_PATH,
+    TROPICAL_CURRENT_POSITION_PATH,
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -72,6 +75,21 @@ def _assert_request(
     if include_units:
         expected_params["units"] = UNITS
     assert request.kwargs["params"] == expected_params
+    assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
+
+
+def _assert_pollen_observation_request(mocked: aioresponses, url: str) -> None:
+    assert len(mocked.requests) == 1
+    (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
+    assert actual_method == "GET"
+    assert actual_url.scheme == "https"
+    assert actual_url.host == URL(url).host
+    assert actual_url.path == URL(url).path
+    request = calls[0]
+    assert request.kwargs["params"] == {
+        "apiKey": API_KEY,
+        "language": LANGUAGE,
+    }
     assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
 
 
@@ -207,6 +225,211 @@ async def test_async_get_alert_headlines_returns_empty_alerts_for_no_data() -> N
 
     assert result == {"alerts": []}
     _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_pollen_forecast_calls_twc_pollen_endpoint() -> None:
+    """Pollen forecast call returns the payload from the expected endpoint."""
+    url = f"{api.BASE_URL}{POLLEN_FORECAST_PATH}"
+    payload = {
+        "pollenForecast12hour": {
+            "fcstValid": [1741820400],
+            "grassPollenIndex": [1],
+            "grassPollenCategory": ["Low"],
+            "treePollenIndex": [3],
+            "treePollenCategory": ["High"],
+            "ragweedPollenIndex": [0],
+            "ragweedPollenCategory": ["None"],
+        }
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), payload=payload)
+
+            result = await client.async_get_pollen_forecast()
+
+    assert result == payload
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 403])
+async def test_async_get_pollen_forecast_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Pollen endpoint no-data and entitlement failures should be non-fatal."""
+    url = f"{api.BASE_URL}{POLLEN_FORECAST_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), status=status)
+
+            result = await client.async_get_pollen_forecast()
+
+    assert result == {}
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_pollen_observation_calls_twc_pollen_endpoint() -> None:
+    """Pollen observation call returns the payload from the expected endpoint."""
+    path = POLLEN_OBSERVATION_PATH.format(latitude=LATITUDE, longitude=LONGITUDE)
+    url = f"{api.BASE_URL}{path}"
+    payload = {
+        "metadata": {"expire_time_gmt": 1397271306},
+        "pollenobservations": [
+            {
+                "rpt_dt": "2014-04-08T15:00:00Z",
+                "total_pollen_cnt": 1156,
+                "total_pollen_idx": "4",
+                "total_pollen_desc": "High",
+                "pollenobservation": [
+                    {
+                        "pollen_type": "Tree",
+                        "pollen_idx": "4",
+                        "pollen_desc": "Very High",
+                        "pollen_cnt": 1156,
+                    }
+                ],
+            }
+        ],
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "language": LANGUAGE,
+                        }
+                    )
+                ),
+                payload=payload,
+            )
+
+            result = await client.async_get_pollen_observation()
+
+    assert result == payload
+    _assert_pollen_observation_request(mocked, url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 401, 403])
+async def test_async_get_pollen_observation_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Pollen observation no-data and entitlement failures should be non-fatal."""
+    path = POLLEN_OBSERVATION_PATH.format(latitude=LATITUDE, longitude=LONGITUDE)
+    url = f"{api.BASE_URL}{path}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "language": LANGUAGE,
+                        }
+                    )
+                ),
+                status=status,
+            )
+
+            result = await client.async_get_pollen_observation()
+
+    assert result == {}
+    _assert_pollen_observation_request(mocked, url)
+
+
+@pytest.mark.asyncio
+async def test_async_get_tropical_current_position_calls_twc_tropical_endpoint() -> None:
+    """Tropical current position call returns active storm payloads."""
+    url = f"{api.BASE_URL}{TROPICAL_CURRENT_POSITION_PATH}"
+    payload = {
+        "currentPosition": [
+            {
+                "storm_id": "AL012026",
+                "storm_name": "Alex",
+                "basin": "AL",
+            }
+        ]
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "source": "default",
+                            "basin": "all",
+                            "language": LANGUAGE,
+                            "format": "json",
+                            "units": UNITS,
+                            "nautical": "false",
+                        }
+                    )
+                ),
+                payload=payload,
+            )
+
+            result = await client.async_get_tropical_current_position()
+
+    assert result == payload
+    assert len(mocked.requests) == 1
+    (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
+    assert actual_method == "GET"
+    assert actual_url.scheme == "https"
+    assert actual_url.host == URL(url).host
+    assert actual_url.path == URL(url).path
+    request = calls[0]
+    assert request.kwargs["params"] == {
+        "apiKey": API_KEY,
+        "source": "default",
+        "basin": "all",
+        "language": LANGUAGE,
+        "format": "json",
+        "units": UNITS,
+        "nautical": "false",
+    }
+    assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 401, 403])
+async def test_async_get_tropical_current_position_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Tropical endpoint no-data and entitlement failures should be non-fatal."""
+    url = f"{api.BASE_URL}{TROPICAL_CURRENT_POSITION_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "source": "default",
+                            "basin": "all",
+                            "language": LANGUAGE,
+                            "format": "json",
+                            "units": UNITS,
+                            "nautical": "false",
+                        }
+                    )
+                ),
+                status=status,
+            )
+
+            result = await client.async_get_tropical_current_position()
+
+    assert result == {}
 
 
 @pytest.mark.asyncio

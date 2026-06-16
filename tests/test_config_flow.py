@@ -10,6 +10,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
+    CONF_ENABLE_POLLEN,
+    CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
@@ -259,6 +261,8 @@ async def test_options_flow_configures_optional_extra_entities(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_ENABLE_POLLEN: False,
+        CONF_ENABLE_TROPICAL_WEATHER: False,
         CONF_EXTRA_ENTITIES: True,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 30,
@@ -305,6 +309,8 @@ async def test_options_flow_configures_update_interval_controls(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_ENABLE_POLLEN: False,
+        CONF_ENABLE_TROPICAL_WEATHER: False,
         CONF_EXTRA_ENTITIES: False,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 60,
@@ -355,7 +361,82 @@ async def test_options_flow_configures_forecast_durations(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "15day",
+        CONF_ENABLE_POLLEN: False,
+        CONF_ENABLE_TROPICAL_WEATHER: False,
         CONF_EXTRA_ENTITIES: True,
         CONF_HOURLY_FORECAST_DURATION: "6hour",
         CONF_UPDATE_INTERVAL_MINUTES: 15,
     }
+
+
+async def test_options_flow_configures_pollen_forecast(hass):
+    """Options flow should allow the pollen forecast endpoint to be enabled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_ENABLE_POLLEN: False},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "init"
+
+    with patch.object(
+        hass.config_entries,
+        "async_reload",
+        AsyncMock(return_value=True),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={CONF_ENABLE_POLLEN: True},
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"] == {
+        CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_ENABLE_POLLEN: True,
+        CONF_ENABLE_TROPICAL_WEATHER: False,
+        CONF_EXTRA_ENTITIES: False,
+        CONF_HOURLY_FORECAST_DURATION: "2day",
+        CONF_UPDATE_INTERVAL_MINUTES: 30,
+    }
+
+
+async def test_options_flow_configures_tropical_weather(hass):
+    """Options flow stores the tropical weather toggle."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_DAILY_FORECAST_DURATION: "7day",
+            CONF_EXTRA_ENTITIES: True,
+            CONF_ENABLE_POLLEN: False,
+            CONF_ENABLE_TROPICAL_WEATHER: True,
+            CONF_HOURLY_FORECAST_DURATION: "2day",
+            CONF_UPDATE_INTERVAL_MINUTES: 30,
+        },
+    )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_ENABLE_TROPICAL_WEATHER] is True

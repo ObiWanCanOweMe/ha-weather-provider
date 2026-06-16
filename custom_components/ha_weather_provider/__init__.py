@@ -13,6 +13,8 @@ from .api import TWCClient
 from .const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
+    CONF_ENABLE_POLLEN,
+    CONF_ENABLE_TROPICAL_WEATHER,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
@@ -67,6 +69,18 @@ def _entry_forecast_duration(
     return duration
 
 
+def _entry_enable_pollen(entry: ConfigEntry) -> bool:
+    """Return whether optional pollen data is enabled."""
+    options = getattr(entry, "options", {})
+    return options.get(CONF_ENABLE_POLLEN) is True
+
+
+def _entry_enable_tropical_weather(entry: ConfigEntry) -> bool:
+    """Return whether optional tropical weather data is enabled."""
+    options = getattr(entry, "options", {})
+    return options.get(CONF_ENABLE_TROPICAL_WEATHER) is True
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate legacy config entries."""
     missing_keys = [key for key in REQUIRED_ENTRY_KEYS if key not in entry.data]
@@ -109,6 +123,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = TWCWeatherCoordinator(
         hass,
         client,
+        pollen_enabled=_entry_enable_pollen(entry),
+        tropical_enabled=_entry_enable_tropical_weather(entry),
         update_interval=_entry_update_interval(entry),
     )
     await coordinator.async_config_entry_first_refresh()
