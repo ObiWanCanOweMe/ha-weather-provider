@@ -2,6 +2,8 @@
 
 This document records the frontend cards, Home Assistant integrations, helper sensors, and external data sources needed by `dashboards/the-weather-company-card-gallery.yaml`. That YAML file is a complete Home Assistant Sections view. Each gallery item uses its own grid section so the descriptor card stays adjacent to the corresponding weather-card demo without wrapping the whole gallery in one nested `vertical-stack` card.
 
+Operational polling and endpoint entitlement behavior is documented in [docs/operations.md](operations.md).
+
 The test Home Assistant instance now uses HACS-managed resources for cards installed through HACS. Some remaining cards are still installed manually under `/config/www/community` with matching `/local/community/...` Lovelace resources.
 
 ## Test Instance Install Paths
@@ -64,7 +66,7 @@ These are worth evaluating for forks or vendored companion cards:
 | Simple Weather Card | Small surface area and direct weather entity consumption; a TWC-focused variant could avoid upstream compatibility churn. |
 | Custom Animated Weather Card | Sensor-heavy configuration maps well to generated TWC adapter sensors, but the card is provider-generic and may need TWC naming defaults. |
 | Platinum Weather Card | Richest demo surface, but has many assets and entity slots. A curated TWC preset or fork could reduce setup friction. |
-| Weather Conditions Card | Good showcase for TWC enrichment. Pollen, U.S. pollen observation, and air quality sensors are available when enabled. |
+| Weather Conditions Card | Good showcase for TWC enrichment. Pollen, U.S. pollen observation, and air quality sensors can be created when enabled and populate when endpoint data is returned. |
 | Meteoalarm Card | Direct fork is less attractive than building a TWC alert adapter that emits a supported warning schema. |
 
 Weather Radar Card and Horizon Card are less useful as forks for this integration because their primary data is not Weather Company API data.

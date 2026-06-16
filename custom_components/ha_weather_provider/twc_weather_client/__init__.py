@@ -14,6 +14,7 @@ from .errors import (
     TWCNoDataError,
     TWCPermissionError,
     TWCRequestError,
+    is_optional_endpoint_unavailable,
 )
 from .normalizers import (
     CONDITION_BY_ICON,
@@ -51,6 +52,7 @@ __all__ = [
     "series_value",
     "series_values",
     "value",
+    "is_optional_endpoint_unavailable",
 ]
 
 

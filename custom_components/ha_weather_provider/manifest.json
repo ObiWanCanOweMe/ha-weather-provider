@@ -4,6 +4,9 @@
   "version": "0.2.0",
   "config_flow": true,
   "documentation": "https://git.kener.org/my-projects/ha-weather-provider",
+  "issue_tracker": "https://git.kener.org/my-projects/ha-weather-provider/-/issues",
   "requirements": [],
-  "codeowners": []
+  "codeowners": ["@akener"],
+  "iot_class": "cloud_polling",
+  "integration_type": "service"
 }

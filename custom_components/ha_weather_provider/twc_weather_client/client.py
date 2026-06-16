@@ -167,7 +167,9 @@ class TWCClient:
         """Return pollen forecast data, when the endpoint is available."""
         try:
             return await self._async_get_json(
-                POLLEN_FORECAST_PATH, params=self._pollen_query_params
+                POLLEN_FORECAST_PATH,
+                params=self._pollen_query_params,
+                no_data_statuses={404},
             )
         except (TWCNoDataError, TWCPermissionError):
             return {}
@@ -181,6 +183,7 @@ class TWCClient:
                     longitude=self._longitude,
                 ),
                 params=self._pollen_observation_query_params,
+                no_data_statuses={404},
             )
         except (TWCAuthError, TWCNoDataError, TWCPermissionError):
             return {}
@@ -189,7 +192,9 @@ class TWCClient:
         """Return active tropical storm current-position data, when available."""
         try:
             return await self._async_get_json(
-                TROPICAL_CURRENT_POSITION_PATH, params=self._tropical_query_params
+                TROPICAL_CURRENT_POSITION_PATH,
+                params=self._tropical_query_params,
+                no_data_statuses={404},
             )
         except (TWCAuthError, TWCNoDataError, TWCPermissionError):
             return {}
@@ -198,7 +203,9 @@ class TWCClient:
         """Return global air quality data, when the endpoint is available."""
         try:
             return await self._async_get_json(
-                AIR_QUALITY_PATH, params=self._air_quality_query_params
+                AIR_QUALITY_PATH,
+                params=self._air_quality_query_params,
+                no_data_statuses={404},
             )
         except (TWCAuthError, TWCNoDataError, TWCPermissionError):
             return {}

@@ -18,8 +18,8 @@ from .twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCError,
-    TWCNoDataError,
     TWCPermissionError,
+    is_optional_endpoint_unavailable,
 )
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
 
@@ -82,14 +82,22 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         if self.pollen_enabled:
             try:
                 pollen_forecast = await self.client.async_get_pollen_forecast()
-            except (TWCAuthError, TWCNoDataError, TWCPermissionError):
-                _LOGGER.debug("Optional TWC pollen forecast endpoint is unavailable")
             except TWCError as err:
-                raise UpdateFailed(str(err)) from err
+                if is_optional_endpoint_unavailable(err):
+                    _LOGGER.debug(
+                        "Optional TWC pollen forecast endpoint is unavailable"
+                    )
+                else:
+                    raise UpdateFailed(str(err)) from err
             try:
                 pollen_observation = await self.client.async_get_pollen_observation()
-            except TWCError:
-                _LOGGER.debug("Optional TWC pollen observation endpoint is unavailable")
+            except TWCError as err:
+                if is_optional_endpoint_unavailable(err):
+                    _LOGGER.debug(
+                        "Optional TWC pollen observation endpoint is unavailable"
+                    )
+                else:
+                    raise UpdateFailed(str(err)) from err
 
         tropical_current_position: dict[str, Any] = {}
         if self.tropical_enabled:
@@ -97,17 +105,23 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
                 tropical_current_position = (
                     await self.client.async_get_tropical_current_position()
                 )
-            except TWCError:
-                _LOGGER.debug(
-                    "Optional TWC tropical current-position endpoint is unavailable"
-                )
+            except TWCError as err:
+                if is_optional_endpoint_unavailable(err):
+                    _LOGGER.debug(
+                        "Optional TWC tropical current-position endpoint is unavailable"
+                    )
+                else:
+                    raise UpdateFailed(str(err)) from err
 
         air_quality: dict[str, Any] = {}
         if self.air_quality_enabled:
             try:
                 air_quality = await self.client.async_get_air_quality()
-            except TWCError:
-                _LOGGER.debug("Optional TWC air quality endpoint is unavailable")
+            except TWCError as err:
+                if is_optional_endpoint_unavailable(err):
+                    _LOGGER.debug("Optional TWC air quality endpoint is unavailable")
+                else:
+                    raise UpdateFailed(str(err)) from err
 
         return TWCWeatherData(
             current=current,

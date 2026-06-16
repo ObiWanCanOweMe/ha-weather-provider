@@ -21,3 +21,8 @@ class TWCNoDataError(TWCError):
 
 class TWCRequestError(TWCError):
     """TWC request failed."""
+
+
+def is_optional_endpoint_unavailable(error: Exception) -> bool:
+    """Return whether an optional endpoint failure should be treated as unavailable."""
+    return isinstance(error, (TWCAuthError, TWCNoDataError, TWCPermissionError))

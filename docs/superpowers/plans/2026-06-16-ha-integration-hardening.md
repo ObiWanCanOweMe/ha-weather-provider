@@ -324,8 +324,8 @@ git commit -m "Add redacted integration diagnostics"
 ### Task 3: Normalize Optional Endpoint Handling
 
 **Files:**
-- Modify: `twc_weather_client/client.py`
-- Modify: `twc_weather_client/__init__.py`
+- Modify: `custom_components/ha_weather_provider/twc_weather_client/client.py`
+- Modify: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
 - Modify: `custom_components/ha_weather_provider/coordinator.py`
 - Test: `tests/test_twc_client.py`
 - Test: `tests/test_coordinator.py`
@@ -335,7 +335,9 @@ git commit -m "Add redacted integration diagnostics"
 Append to `tests/test_twc_client.py`:
 
 ```python
-from twc_weather_client import is_optional_endpoint_unavailable
+from custom_components.ha_weather_provider.twc_weather_client import (
+    is_optional_endpoint_unavailable,
+)
 
 
 def test_is_optional_endpoint_unavailable_identifies_no_data_and_entitlement() -> None:
@@ -354,7 +356,7 @@ Expected: FAIL with `ImportError` for `is_optional_endpoint_unavailable`.
 
 - [ ] **Step 3: Add optional endpoint helper**
 
-Add to `twc_weather_client/client.py`:
+Add to `custom_components/ha_weather_provider/twc_weather_client/client.py`:
 
 ```python
 def is_optional_endpoint_unavailable(error: Exception) -> bool:
@@ -362,7 +364,10 @@ def is_optional_endpoint_unavailable(error: Exception) -> bool:
     return isinstance(error, (TWCAuthError, TWCNoDataError, TWCPermissionError))
 ```
 
-Export it from `twc_weather_client/__init__.py`:
+Export it from `custom_components/ha_weather_provider/twc_weather_client/__init__.py`.
+Keep package imports dependency-light; if exporting the helper from the package
+would require eager `.client` import and therefore eager `aiohttp`, expose it via
+the existing lazy `__getattr__` pattern.
 
 ```python
 from .client import TWCClient, is_optional_endpoint_unavailable
@@ -375,7 +380,7 @@ Add `"is_optional_endpoint_unavailable"` to `__all__`.
 Modify `custom_components/ha_weather_provider/coordinator.py` imports:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -413,7 +418,7 @@ Expected: PASS.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add twc_weather_client/client.py twc_weather_client/__init__.py custom_components/ha_weather_provider/coordinator.py tests/test_twc_client.py tests/test_coordinator.py
+git add custom_components/ha_weather_provider/twc_weather_client/client.py custom_components/ha_weather_provider/twc_weather_client/__init__.py custom_components/ha_weather_provider/coordinator.py tests/test_twc_client.py tests/test_coordinator.py
 git commit -m "Normalize optional endpoint failures"
 ```
 
@@ -713,7 +718,7 @@ Expected: PASS.
 
 - [ ] **Step 2: Run Ruff**
 
-Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check twc_weather_client custom_components/ha_weather_provider tests`
+Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check custom_components/ha_weather_provider tests`
 
 Expected: PASS.
 
@@ -728,7 +733,7 @@ Expected: compile, JSON validation, Ruff/harness checks, and pytest all pass.
 If verification required fixes:
 
 ```bash
-git add twc_weather_client custom_components/ha_weather_provider docs tests .gitignore
+git add custom_components/ha_weather_provider docs tests .gitignore hacs.json scripts/develop
 git commit -m "Stabilize HA integration hardening"
 ```
 
