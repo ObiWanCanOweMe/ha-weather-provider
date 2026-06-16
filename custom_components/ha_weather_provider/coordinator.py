@@ -35,6 +35,7 @@ class TWCWeatherData:
     hourly_forecast: dict[str, Any]
     alert_headlines: dict[str, Any]
     pollen_forecast: dict[str, Any] = field(default_factory=dict)
+    tropical_current_position: dict[str, Any] = field(default_factory=dict)
 
 
 class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
@@ -46,6 +47,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         client: TWCClient,
         *,
         pollen_enabled: bool = False,
+        tropical_enabled: bool = False,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         super().__init__(
@@ -57,6 +59,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         )
         self.client = client
         self.pollen_enabled = pollen_enabled
+        self.tropical_enabled = tropical_enabled
 
     async def _async_update_data(self) -> TWCWeatherData:
         """Fetch current conditions and 7-day daily forecast."""
@@ -79,10 +82,22 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
             except TWCError as err:
                 raise UpdateFailed(str(err)) from err
 
+        tropical_current_position: dict[str, Any] = {}
+        if self.tropical_enabled:
+            try:
+                tropical_current_position = (
+                    await self.client.async_get_tropical_current_position()
+                )
+            except TWCError:
+                _LOGGER.debug(
+                    "Optional TWC tropical current-position endpoint is unavailable"
+                )
+
         return TWCWeatherData(
             current=current,
             daily_forecast=daily_forecast,
             hourly_forecast=hourly_forecast,
             alert_headlines=alert_headlines,
             pollen_forecast=pollen_forecast,
+            tropical_current_position=tropical_current_position,
         )

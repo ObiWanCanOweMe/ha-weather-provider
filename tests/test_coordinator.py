@@ -41,6 +41,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         hourly_forecast={"temperature": [72, 71]},
         alert_headlines={"alerts": [{"eventDescription": "Tornado Warning"}]},
         pollen_forecast={},
+        tropical_current_position={},
     )
     client.async_get_pollen_forecast.assert_not_called()
 
@@ -91,6 +92,55 @@ async def test_coordinator_keeps_weather_data_when_optional_pollen_unavailable(
 
     assert data.current == {"temperature": 72}
     assert data.pollen_forecast == {}
+
+
+@pytest.mark.asyncio
+async def test_coordinator_fetches_tropical_when_enabled(hass) -> None:
+    """Coordinator should merge tropical current-position data when enabled."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_tropical_current_position.return_value = {
+        "currentPosition": [{"storm_id": "AL012026"}]
+    }
+    coordinator = TWCWeatherCoordinator(hass, client, tropical_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.tropical_current_position == {
+        "currentPosition": [{"storm_id": "AL012026"}]
+    }
+    client.async_get_tropical_current_position.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error",
+    [
+        TWCNoDataError("empty"),
+        TWCAuthError("bad key for optional endpoint"),
+        TWCPermissionError("no access"),
+        TWCRequestError("temporary tropical failure"),
+    ],
+)
+async def test_coordinator_keeps_weather_data_when_optional_tropical_unavailable(
+    hass, error
+) -> None:
+    """Optional tropical endpoint failures should not fail weather refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_tropical_current_position.side_effect = error
+    coordinator = TWCWeatherCoordinator(hass, client, tropical_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.current == {"temperature": 72}
+    assert data.tropical_current_position == {}
 
 
 def test_coordinator_uses_configured_update_interval(hass) -> None:
