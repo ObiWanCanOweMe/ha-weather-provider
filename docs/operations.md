@@ -26,7 +26,7 @@ Optional endpoints are requested only when their options are enabled:
 - Tropical current position: `/v2/tropical/currentposition`
 - Global air quality: `/v3/wx/globalAirQuality`
 
-Optional endpoint failures caused by missing entitlement, no data, or auth-style unavailability do not break the main `weather.twc` entity. The integration keeps core weather data available, stores an empty optional payload for that endpoint, and leaves related optional sensors unavailable when no usable data is returned.
+Optional endpoint failures caused by missing entitlement, no data, or auth-style unavailability do not break the main `weather.twc` entity. The integration keeps core weather data available, stores an empty optional payload for that endpoint, and related optional sensors expose no value or endpoint-specific empty states when no usable data is returned.
 
 Unexpected optional request failures reported as `TWCRequestError` raise a coordinator update failure instead of being silently swallowed. Treat those errors as real refresh failures that should be investigated separately from normal optional endpoint entitlement or data availability.
 
