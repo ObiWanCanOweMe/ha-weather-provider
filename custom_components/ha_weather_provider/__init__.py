@@ -4,48 +4,32 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from .api import TWCClient
-from .const import (
-    CONF_API_KEY,
-    CONF_DAILY_FORECAST_DURATION,
-    CONF_ENABLE_AIR_QUALITY,
-    CONF_ENABLE_POLLEN,
-    CONF_ENABLE_TROPICAL_WEATHER,
-    CONF_HOURLY_FORECAST_DURATION,
-    CONF_LANGUAGE,
-    CONF_LATITUDE,
-    CONF_LONGITUDE,
-    CONF_UPDATE_INTERVAL_MINUTES,
-    CONF_UNITS,
-    DAILY_FORECAST_DURATIONS,
-    DEFAULT_DAILY_FORECAST_DURATION,
-    DEFAULT_HOURLY_FORECAST_DURATION,
-    DEFAULT_UPDATE_INTERVAL_MINUTES,
-    DOMAIN,
-    HOURLY_FORECAST_DURATIONS,
-    UPDATE_INTERVAL_MINUTES,
-)
-from .coordinator import TWCWeatherCoordinator
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["weather", "sensor"]
 REQUIRED_ENTRY_KEYS = (
-    CONF_API_KEY,
-    CONF_LATITUDE,
-    CONF_LONGITUDE,
-    CONF_UNITS,
-    CONF_LANGUAGE,
+    "api_key",
+    "latitude",
+    "longitude",
+    "units",
+    "language",
 )
 
 
 def _entry_update_interval(entry: ConfigEntry) -> timedelta:
     """Return the configured coordinator update interval."""
+    from .const import (
+        CONF_UPDATE_INTERVAL_MINUTES,
+        DEFAULT_UPDATE_INTERVAL_MINUTES,
+        UPDATE_INTERVAL_MINUTES,
+    )
+
     options = getattr(entry, "options", {})
     minutes = options.get(
         CONF_UPDATE_INTERVAL_MINUTES,
@@ -72,24 +56,32 @@ def _entry_forecast_duration(
 
 def _entry_enable_pollen(entry: ConfigEntry) -> bool:
     """Return whether optional pollen data is enabled."""
+    from .const import CONF_ENABLE_POLLEN
+
     options = getattr(entry, "options", {})
     return options.get(CONF_ENABLE_POLLEN) is True
 
 
 def _entry_enable_tropical_weather(entry: ConfigEntry) -> bool:
     """Return whether optional tropical weather data is enabled."""
+    from .const import CONF_ENABLE_TROPICAL_WEATHER
+
     options = getattr(entry, "options", {})
     return options.get(CONF_ENABLE_TROPICAL_WEATHER) is True
 
 
 def _entry_enable_air_quality(entry: ConfigEntry) -> bool:
     """Return whether optional air quality data is enabled."""
+    from .const import CONF_ENABLE_AIR_QUALITY
+
     options = getattr(entry, "options", {})
     return options.get(CONF_ENABLE_AIR_QUALITY) is True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate legacy config entries."""
+    from .const import DOMAIN
+
     missing_keys = [key for key in REQUIRED_ENTRY_KEYS if key not in entry.data]
     if missing_keys:
         _LOGGER.error(
@@ -106,6 +98,25 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up HA Weather Provider from a config entry."""
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+    from .const import (
+        CONF_API_KEY,
+        CONF_DAILY_FORECAST_DURATION,
+        CONF_HOURLY_FORECAST_DURATION,
+        CONF_LANGUAGE,
+        CONF_LATITUDE,
+        CONF_LONGITUDE,
+        CONF_UNITS,
+        DAILY_FORECAST_DURATIONS,
+        DEFAULT_DAILY_FORECAST_DURATION,
+        DEFAULT_HOURLY_FORECAST_DURATION,
+        DOMAIN,
+        HOURLY_FORECAST_DURATIONS,
+    )
+    from .coordinator import TWCWeatherCoordinator
+    from .twc_weather_client import TWCClient
+
     session = async_get_clientsession(hass)
     client = TWCClient(
         session=session,
@@ -148,6 +159,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    from .const import DOMAIN
+
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)

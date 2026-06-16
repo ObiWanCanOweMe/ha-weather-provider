@@ -370,6 +370,12 @@ git add custom_components/ha_weather_provider/twc_weather_client/__init__.py cus
 git commit -m "Move TWC request client into package"
 ```
 
+**Review follow-up:** Keep the parent integration package lazy at import time so
+`PYTHONPATH=custom_components python -c "import ha_weather_provider.twc_weather_client.defaults"`
+does not import Home Assistant. `tests/test_twc_client.py` includes a subprocess
+regression that injects `sys.modules["homeassistant"] = None` before importing
+the client defaults module.
+
 ### Task 3: Move Shared Normalizer Helpers
 
 **Files:**

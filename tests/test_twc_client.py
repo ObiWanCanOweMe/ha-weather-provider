@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 from aiohttp import ClientSession
 from aioresponses import aioresponses
@@ -36,6 +41,34 @@ LATITUDE = 40.58
 LONGITUDE = -111.66
 UNITS = "e"
 LANGUAGE = "en-US"
+
+
+def test_client_defaults_import_without_homeassistant(tmp_path: Path) -> None:
+    """Client defaults import without the Home Assistant package available."""
+    repo_root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root / "custom_components")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['homeassistant'] = None; "
+                "import ha_weather_provider.twc_weather_client.defaults; "
+                "print('ok')"
+            ),
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "ok" in result.stdout
 
 
 def test_integration_defaults_match_client_package_defaults() -> None:

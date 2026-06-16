@@ -80,12 +80,12 @@ async def test_async_setup_entry_cleans_up_on_forward_failure(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ) as mock_client, patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -118,12 +118,12 @@ async def test_async_setup_entry_uses_configured_update_interval(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -152,12 +152,12 @@ async def test_async_setup_entry_passes_pollen_option_to_coordinator(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -186,12 +186,12 @@ async def test_async_setup_entry_disables_pollen_by_default(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -220,12 +220,12 @@ async def test_async_setup_entry_passes_tropical_option_to_coordinator(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -254,12 +254,12 @@ async def test_async_setup_entry_disables_tropical_by_default(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -288,12 +288,12 @@ async def test_async_setup_entry_requires_bool_true_for_tropical_option(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -322,12 +322,12 @@ async def test_async_setup_entry_passes_air_quality_option_to_coordinator(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -356,12 +356,12 @@ async def test_async_setup_entry_disables_air_quality_by_default(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -390,12 +390,12 @@ async def test_async_setup_entry_requires_bool_true_for_air_quality_option(hass)
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ), patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ) as mock_coordinator, patch.object(
         hass.config_entries,
@@ -427,12 +427,12 @@ async def test_async_setup_entry_passes_configured_forecast_durations(hass):
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ) as mock_client, patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ), patch.object(
         hass.config_entries,
@@ -465,12 +465,12 @@ async def test_async_setup_entry_falls_back_from_invalid_forecast_durations(hass
     coordinator.async_config_entry_first_refresh = AsyncMock()
 
     with patch(
-        "custom_components.ha_weather_provider.async_get_clientsession",
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
         return_value=object(),
     ), patch(
-        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+        "custom_components.ha_weather_provider.twc_weather_client.TWCClient", return_value=object()
     ) as mock_client, patch(
-        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        "custom_components.ha_weather_provider.coordinator.TWCWeatherCoordinator",
         return_value=coordinator,
     ), patch.object(
         hass.config_entries,
