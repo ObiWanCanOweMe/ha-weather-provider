@@ -45,7 +45,7 @@ def _payload_presence(data: Any) -> dict[str, bool]:
         "current": bool(data.current),
         "daily_forecast": bool(data.daily_forecast),
         "hourly_forecast": bool(data.hourly_forecast),
-        "alerts": bool(data.alert_headlines),
+        "alert_headlines": bool(data.alert_headlines),
         "pollen_forecast": bool(data.pollen_forecast),
         "pollen_observation": bool(data.pollen_observation),
         "tropical_current_position": bool(data.tropical_current_position),

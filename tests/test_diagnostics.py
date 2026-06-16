@@ -111,7 +111,7 @@ async def test_config_entry_diagnostics_reports_payload_presence(hass) -> None:
         "current": True,
         "daily_forecast": True,
         "hourly_forecast": True,
-        "alerts": True,
+        "alert_headlines": True,
         "pollen_forecast": True,
         "pollen_observation": True,
         "tropical_current_position": True,
