@@ -14,6 +14,7 @@ from custom_components.ha_weather_provider.api import (
     CURRENT_PATH,
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
+    POLLEN_FORECAST_PATH,
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -206,6 +207,50 @@ async def test_async_get_alert_headlines_returns_empty_alerts_for_no_data() -> N
             result = await client.async_get_alert_headlines()
 
     assert result == {"alerts": []}
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_pollen_forecast_calls_twc_pollen_endpoint() -> None:
+    """Pollen forecast call returns the payload from the expected endpoint."""
+    url = f"{api.BASE_URL}{POLLEN_FORECAST_PATH}"
+    payload = {
+        "pollenForecast12hour": {
+            "fcstValid": [1741820400],
+            "grassPollenIndex": [1],
+            "grassPollenCategory": ["Low"],
+            "treePollenIndex": [3],
+            "treePollenCategory": ["High"],
+            "ragweedPollenIndex": [0],
+            "ragweedPollenCategory": ["None"],
+        }
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), payload=payload)
+
+            result = await client.async_get_pollen_forecast()
+
+    assert result == payload
+    _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 403])
+async def test_async_get_pollen_forecast_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Pollen endpoint no-data and entitlement failures should be non-fatal."""
+    url = f"{api.BASE_URL}{POLLEN_FORECAST_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(_request_url(url, include_units=False), status=status)
+
+            result = await client.async_get_pollen_forecast()
+
+    assert result == {}
     _assert_request(mocked, "GET", url, include_units=False)
 
 

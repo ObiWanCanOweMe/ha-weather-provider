@@ -331,6 +331,9 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
                     _first_daypart_value(daypart, "temperatureWindChill", index),
                 ),
                 "humidity": _first_daypart_value(daypart, "relativeHumidity", index),
+                "native_dew_point": _first_daypart_value(
+                    daypart, "temperatureDewPoint", index
+                ),
                 "cloud_coverage": _first_daypart_value(daypart, "cloudCover", index),
                 "precipitation_probability": _first_daypart_value(daypart, "precipChance", index),
                 "native_precipitation": _first_daypart_value(daypart, "qpf", index),
@@ -366,6 +369,7 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
                 ),
                 "humidity": _series_value(data, "relativeHumidity", index),
                 "native_pressure": _series_value(data, "pressureMeanSeaLevel", index),
+                "cloud_coverage": _series_value(data, "cloudCover", index),
                 "precipitation_probability": _series_value(
                     data, "precipChance", index
                 ),

@@ -8,7 +8,11 @@ from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
-from .const import DEFAULT_DAILY_FORECAST_DURATION, DEFAULT_HOURLY_FORECAST_DURATION
+from .const import (
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
+)
 
 BASE_URL = "https://api.weather.com"
 CURRENT_PATH = "/v3/wx/observations/current"
@@ -17,6 +21,8 @@ HOURLY_FORECAST_PATH_PREFIX = "/v3/wx/forecast/hourly"
 DAILY_FORECAST_PATH = f"{DAILY_FORECAST_PATH_PREFIX}/{DEFAULT_DAILY_FORECAST_DURATION}"
 HOURLY_FORECAST_PATH = f"{HOURLY_FORECAST_PATH_PREFIX}/{DEFAULT_HOURLY_FORECAST_DURATION}"
 ALERT_HEADLINES_PATH = "/v3/alerts/headlines"
+POLLEN_FORECAST_PATH_PREFIX = "/v2/indices/pollen/daypart"
+POLLEN_FORECAST_PATH = f"{POLLEN_FORECAST_PATH_PREFIX}/{DEFAULT_POLLEN_FORECAST_DURATION}"
 
 
 class TWCError(Exception):
@@ -82,6 +88,10 @@ class TWCClient:
             "format": "json",
         }
 
+    @property
+    def _pollen_query_params(self) -> dict[str, str]:
+        return self._alert_query_params
+
     async def async_get_current_conditions(self) -> dict[str, Any]:
         """Return current conditions."""
         return await self._async_get_json(CURRENT_PATH, params=self._weather_query_params)
@@ -108,6 +118,15 @@ class TWCClient:
             )
         except TWCNoDataError:
             return {"alerts": []}
+
+    async def async_get_pollen_forecast(self) -> dict[str, Any]:
+        """Return pollen forecast data, when the endpoint is available."""
+        try:
+            return await self._async_get_json(
+                POLLEN_FORECAST_PATH, params=self._pollen_query_params
+            )
+        except (TWCNoDataError, TWCPermissionError):
+            return {}
 
     async def _async_get_json(self, path: str, *, params: dict[str, str]) -> dict[str, Any]:
         url = f"{BASE_URL}{path}"

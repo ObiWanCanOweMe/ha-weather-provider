@@ -31,13 +31,15 @@
         "title": "Options",
         "data": {
           "daily_forecast_duration": "Daily forecast duration",
+          "enable_pollen": "Enable pollen forecast",
           "extra_entities": "Create optional extra entities",
           "hourly_forecast_duration": "Hourly forecast duration",
           "update_interval_minutes": "Update interval"
         },
         "data_description": {
           "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
-          "extra_entities": "Adds companion diagnostic sensors for alert count, condition phrase, observation time, integration version, and wind gust.",
+          "enable_pollen": "Requests The Weather Company pollen forecast endpoint and creates pollen forecast sensors when data is available.",
+          "extra_entities": "Adds companion sensors for current conditions, rolling precipitation and snow amounts, alert count, observation time, integration version, and daily forecast adapter values.",
           "hourly_forecast_duration": "The Weather Company hourly forecast endpoint to request.",
           "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
         }

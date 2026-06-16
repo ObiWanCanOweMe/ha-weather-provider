@@ -13,6 +13,7 @@ from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
+    CONF_ENABLE_POLLEN,
     CONF_EXTRA_ENTITIES,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
@@ -135,6 +136,10 @@ class HAWeatherProviderOptionsFlow(config_entries.OptionsFlowWithReload):
                 vol.Optional(
                     CONF_EXTRA_ENTITIES,
                     default=self.config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+                ): bool,
+                vol.Optional(
+                    CONF_ENABLE_POLLEN,
+                    default=self.config_entry.options.get(CONF_ENABLE_POLLEN, False),
                 ): bool,
                 vol.Optional(
                     CONF_HOURLY_FORECAST_DURATION,

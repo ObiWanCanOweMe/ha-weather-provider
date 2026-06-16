@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 import logging
 from typing import Any
@@ -14,7 +14,13 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
+from .api import (
+    TWCAuthError,
+    TWCClient,
+    TWCError,
+    TWCNoDataError,
+    TWCPermissionError,
+)
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,6 +34,7 @@ class TWCWeatherData:
     daily_forecast: dict[str, Any]
     hourly_forecast: dict[str, Any]
     alert_headlines: dict[str, Any]
+    pollen_forecast: dict[str, Any] = field(default_factory=dict)
 
 
 class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
@@ -38,6 +45,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        pollen_enabled: bool = False,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         super().__init__(
@@ -48,6 +56,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
             always_update=False,
         )
         self.client = client
+        self.pollen_enabled = pollen_enabled
 
     async def _async_update_data(self) -> TWCWeatherData:
         """Fetch current conditions and 7-day daily forecast."""
@@ -61,9 +70,19 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         except TWCError as err:
             raise UpdateFailed(str(err)) from err
 
+        pollen_forecast: dict[str, Any] = {}
+        if self.pollen_enabled:
+            try:
+                pollen_forecast = await self.client.async_get_pollen_forecast()
+            except (TWCAuthError, TWCNoDataError, TWCPermissionError):
+                _LOGGER.debug("Optional TWC pollen forecast endpoint is unavailable")
+            except TWCError as err:
+                raise UpdateFailed(str(err)) from err
+
         return TWCWeatherData(
             current=current,
             daily_forecast=daily_forecast,
             hourly_forecast=hourly_forecast,
             alert_headlines=alert_headlines,
+            pollen_forecast=pollen_forecast,
         )

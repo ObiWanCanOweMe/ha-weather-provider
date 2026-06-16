@@ -7,9 +7,18 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from homeassistant.components.sensor import SensorDeviceClass
-from homeassistant.const import EntityCategory, UnitOfSpeed
+from homeassistant.const import (
+    DEGREE,
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfLength,
+    UnitOfPressure,
+    UnitOfSpeed,
+    UnitOfTemperature,
+)
 
 from custom_components.ha_weather_provider.const import (
+    CONF_ENABLE_POLLEN,
     CONF_EXTRA_ENTITIES,
     CONF_UNITS,
     DOMAIN,
@@ -21,17 +30,71 @@ from custom_components.ha_weather_provider.sensor import (
     async_setup_entry,
 )
 
+DAILY_FORECAST_SENSOR_KEYS = (
+    "condition",
+    "high",
+    "low",
+    "precip_probability",
+    "precip_amount",
+    "summary",
+    "day_phrase",
+    "night_phrase",
+    "day_cloud_cover",
+    "night_cloud_cover",
+    "day_precip_probability",
+    "night_precip_probability",
+    "day_precip_amount",
+    "night_precip_amount",
+    "day_thunderstorm_probability",
+    "night_thunderstorm_probability",
+    "day_uv_index",
+    "night_uv_index",
+    "day_wind_speed",
+    "night_wind_speed",
+    "apparent_max",
+    "apparent_min",
+)
 
-def _coordinator() -> SimpleNamespace:
+
+def _coordinator(
+    *,
+    daily_forecast: dict[str, object] | None = None,
+    pollen_forecast: dict[str, object] | None = None,
+) -> SimpleNamespace:
     """Return coordinator-shaped test data for sensor entities."""
     return SimpleNamespace(
         data=TWCWeatherData(
             current={
+                "cloudCover": 41,
+                "cloudCoverPhrase": "Partly Cloudy",
+                "cloudCeiling": 11100,
+                "iconCode": 30,
+                "precip1Hour": 0.04,
+                "precip6Hour": 0.12,
+                "precip24Hour": 0.25,
+                "pressureChange": 0.04,
+                "pressureMeanSeaLevel": 1014.7,
+                "pressureTendencyCode": 1,
+                "pressureTendencyTrend": "Rising",
+                "relativeHumidity": 54,
+                "snow1Hour": 0,
+                "snow6Hour": 0.1,
+                "snow24Hour": 0.3,
+                "sunriseTimeUtc": 1718103600,
+                "sunsetTimeUtc": 1718157600,
+                "temperature": 72,
+                "temperatureDewPoint": 55,
+                "temperatureFeelsLike": 73,
+                "uvDescription": "High",
+                "uvIndex": 6,
+                "visibility": 10,
+                "windDirection": 220,
                 "wxPhraseLong": "Partly Cloudy",
                 "validTimeUtc": 1718121600,
+                "windSpeed": 7,
                 "windGust": 12,
             },
-            daily_forecast={"validTimeUtc": []},
+            daily_forecast=daily_forecast or {"validTimeUtc": []},
             hourly_forecast={"validTimeUtc": []},
             alert_headlines={
                 "alerts": [
@@ -39,6 +102,7 @@ def _coordinator() -> SimpleNamespace:
                     {"headlineText": "Flood Watch"},
                 ]
             },
+            pollen_forecast=pollen_forecast or {},
         )
     )
 
@@ -62,6 +126,27 @@ async def test_sensor_setup_skips_entities_when_option_disabled(hass) -> None:
     async_add_entities.assert_not_called()
 
 
+async def test_sensor_setup_adds_pollen_entities_when_pollen_enabled(hass) -> None:
+    """Pollen sensors should be created when the pollen option is enabled."""
+    async_add_entities = Mock()
+    entry = _entry(options={CONF_ENABLE_POLLEN: True, CONF_EXTRA_ENTITIES: False})
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    entities = async_add_entities.call_args.args[0]
+    assert [entity.unique_id for entity in entities] == [
+        "entry-id_pollen_forecast_time",
+        "entry-id_pollen_expiration_time",
+        "entry-id_pollen_grass_index",
+        "entry-id_pollen_grass_category",
+        "entry-id_pollen_tree_index",
+        "entry-id_pollen_tree_category",
+        "entry-id_pollen_ragweed_index",
+        "entry-id_pollen_ragweed_category",
+    ]
+
+
 async def test_sensor_setup_adds_optional_entities_when_enabled(hass) -> None:
     """The first optional milestone should expose a compact diagnostic sensor set."""
     async_add_entities = Mock()
@@ -71,12 +156,50 @@ async def test_sensor_setup_adds_optional_entities_when_enabled(hass) -> None:
     await async_setup_entry(hass, entry, async_add_entities)
 
     entities = async_add_entities.call_args.args[0]
+    assert [entity.name for entity in entities[:5]] == [
+        "TWC Alert Count",
+        "TWC Condition Phrase",
+        "TWC Observation Time",
+        "TWC Integration Version",
+        "TWC Wind Gust",
+    ]
     assert [entity.unique_id for entity in entities] == [
         "entry-id_alert_count",
         "entry-id_condition_phrase",
         "entry-id_observation_time",
         "entry-id_integration_version",
         "entry-id_wind_gust",
+        "entry-id_temperature",
+        "entry-id_feels_like_temperature",
+        "entry-id_dew_point",
+        "entry-id_humidity",
+        "entry-id_pressure",
+        "entry-id_pressure_change",
+        "entry-id_pressure_tendency_code",
+        "entry-id_pressure_tendency",
+        "entry-id_cloud_cover",
+        "entry-id_cloud_cover_phrase",
+        "entry-id_cloud_ceiling",
+        "entry-id_uv_index",
+        "entry-id_uv_description",
+        "entry-id_visibility",
+        "entry-id_wind_speed",
+        "entry-id_wind_bearing",
+        "entry-id_precip_amount",
+        "entry-id_precip_1_hour",
+        "entry-id_precip_6_hour",
+        "entry-id_precip_24_hour",
+        "entry-id_snow_1_hour",
+        "entry-id_snow_6_hour",
+        "entry-id_snow_24_hour",
+        "entry-id_condition_code",
+        "entry-id_sunrise_time",
+        "entry-id_sunset_time",
+        *[
+            f"entry-id_daily_forecast_day_{day}_{key}"
+            for day in range(1, 6)
+            for key in DAILY_FORECAST_SENSOR_KEYS
+        ],
     ]
 
 
@@ -101,8 +224,90 @@ def test_optional_sensor_values() -> None:
     assert entities["integration_version"].native_value == INTEGRATION_VERSION
     assert entities["wind_gust"].native_value == 12
     assert entities["wind_gust"].native_unit_of_measurement == UnitOfSpeed.MILES_PER_HOUR
+    assert entities["temperature"].native_value == 72
+    assert entities["temperature"].native_unit_of_measurement == UnitOfTemperature.FAHRENHEIT
+    assert entities["feels_like_temperature"].native_value == 73
+    assert entities["dew_point"].native_value == 55
+    assert entities["humidity"].native_value == 54
+    assert entities["humidity"].native_unit_of_measurement == PERCENTAGE
+    assert entities["pressure"].native_value == 1014.7
+    assert entities["pressure"].native_unit_of_measurement == UnitOfPressure.HPA
+    assert entities["pressure_change"].native_value == 0.04
+    assert entities["pressure_change"].native_unit_of_measurement == UnitOfPressure.HPA
+    assert entities["pressure_tendency_code"].native_value == 1
+    assert entities["pressure_tendency"].native_value == "Rising"
+    assert entities["cloud_cover"].native_value == 41
+    assert entities["cloud_cover"].native_unit_of_measurement == PERCENTAGE
+    assert entities["cloud_cover_phrase"].native_value == "Partly Cloudy"
+    assert entities["cloud_ceiling"].native_value == 11100
+    assert entities["cloud_ceiling"].native_unit_of_measurement is None
+    assert entities["uv_index"].native_value == 6
+    assert entities["uv_description"].native_value == "High"
+    assert entities["visibility"].native_value == 10
+    assert entities["visibility"].native_unit_of_measurement == UnitOfLength.MILES
+    assert entities["wind_speed"].native_value == 7
+    assert entities["wind_speed"].native_unit_of_measurement == UnitOfSpeed.MILES_PER_HOUR
+    assert entities["wind_bearing"].native_value == 220
+    assert entities["wind_bearing"].native_unit_of_measurement == DEGREE
+    assert entities["precip_amount"].native_value == 0.04
+    assert entities["precip_amount"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["precip_1_hour"].native_value == 0.04
+    assert entities["precip_1_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["precip_6_hour"].native_value == 0.12
+    assert entities["precip_6_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["precip_24_hour"].native_value == 0.25
+    assert entities["precip_24_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["snow_1_hour"].native_value == 0
+    assert entities["snow_1_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["snow_6_hour"].native_value == 0.1
+    assert entities["snow_6_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["snow_24_hour"].native_value == 0.3
+    assert entities["snow_24_hour"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["condition_code"].native_value == 30
+    assert entities["sunrise_time"].native_value == datetime(
+        2024, 6, 11, 11, 0, tzinfo=UTC
+    )
+    assert entities["sunrise_time"].device_class == SensorDeviceClass.TIMESTAMP
+    assert entities["sunset_time"].native_value == datetime(
+        2024, 6, 12, 2, 0, tzinfo=UTC
+    )
+    assert entities["sunset_time"].device_class == SensorDeviceClass.TIMESTAMP
+    assert "precip_rate" not in entities
     assert entities["observation_time"].device_class == SensorDeviceClass.TIMESTAMP
     assert entities["integration_version"].entity_category == EntityCategory.DIAGNOSTIC
+
+
+def test_current_detail_sensors_are_unavailable_when_values_are_missing_or_null() -> None:
+    """Current detail sensors should stay unavailable for missing, null, or blank payload values."""
+    coordinator = _coordinator()
+    for key in (
+        "cloudCeiling",
+        "pressureChange",
+        "pressureTendencyTrend",
+        "sunriseTimeUtc",
+        "uvDescription",
+    ):
+        coordinator.data.current[key] = None
+    for key in ("cloudCoverPhrase", "pressureTendencyCode", "sunsetTimeUtc"):
+        coordinator.data.current.pop(key)
+    entry = _entry(options={CONF_EXTRA_ENTITIES: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.entity_descriptions()
+        ]
+    }
+
+    assert entities["pressure_change"].native_value is None
+    assert entities["pressure_tendency_code"].native_value is None
+    assert entities["pressure_tendency"].native_value is None
+    assert entities["cloud_cover_phrase"].native_value is None
+    assert entities["cloud_ceiling"].native_value is None
+    assert entities["uv_description"].native_value is None
+    assert entities["sunrise_time"].native_value is None
+    assert entities["sunset_time"].native_value is None
 
 
 def test_optional_sensor_handles_missing_wind_gust() -> None:
@@ -117,6 +322,154 @@ def test_optional_sensor_handles_missing_wind_gust() -> None:
             for description in TWCSensorEntity.entity_descriptions()
         ]
         if entity.entity_description.key == "wind_gust"
+    )
+
+    assert entity.native_value is None
+
+
+def test_daily_forecast_adapter_sensor_values() -> None:
+    """Daily forecast adapter sensors should expose card-friendly day slots."""
+    coordinator = _coordinator(
+        daily_forecast={
+            "validTimeUtc": [1718121600, 1718208000],
+            "temperatureMax": [78, 82],
+            "temperatureMin": [61, 65],
+            "narrative": ["Partly cloudy.", "Scattered showers."],
+            "daypart": [
+                {
+                    "wxPhraseLong": [
+                        None,
+                        "Partly Cloudy",
+                        "Mostly Clear",
+                        "Rain Showers",
+                        "Cloudy",
+                    ],
+                    "iconCode": [None, 30, 33, 12, 26],
+                    "cloudCover": [None, 38, 20, 80, 95],
+                    "precipChance": [None, 15, 5, 60, 40],
+                    "qpf": [None, 0.02, 0, 0.18, 0.05],
+                    "thunderIndex": [None, 1, 0, 2, 1],
+                    "uvIndex": [None, 6, 0, 3, 0],
+                    "windSpeed": [None, 8, 4, 12, 6],
+                    "temperatureHeatIndex": [None, 80, 64, 83, 66],
+                    "temperatureWindChill": [None, 72, 58, 74, 60],
+                }
+            ],
+        }
+    )
+    entry = _entry(options={CONF_EXTRA_ENTITIES: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.entity_descriptions()
+        ]
+    }
+
+    assert entities["daily_forecast_day_1_condition"].native_value == "partlycloudy"
+    assert entities["daily_forecast_day_1_high"].native_value == 78
+    assert entities["daily_forecast_day_1_high"].native_unit_of_measurement == UnitOfTemperature.FAHRENHEIT
+    assert entities["daily_forecast_day_1_low"].native_value == 61
+    assert entities["daily_forecast_day_1_precip_probability"].native_value == 15
+    assert entities["daily_forecast_day_1_precip_probability"].native_unit_of_measurement == PERCENTAGE
+    assert entities["daily_forecast_day_1_precip_amount"].native_value == 0.02
+    assert entities["daily_forecast_day_1_precip_amount"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["daily_forecast_day_1_summary"].native_value == "Partly cloudy."
+    assert entities["daily_forecast_day_1_day_phrase"].native_value == "Partly Cloudy"
+    assert entities["daily_forecast_day_1_night_phrase"].native_value == "Mostly Clear"
+    assert entities["daily_forecast_day_1_day_cloud_cover"].native_value == 38
+    assert entities["daily_forecast_day_1_day_cloud_cover"].native_unit_of_measurement == PERCENTAGE
+    assert entities["daily_forecast_day_1_night_cloud_cover"].native_value == 20
+    assert entities["daily_forecast_day_1_day_precip_probability"].native_value == 15
+    assert entities["daily_forecast_day_1_day_precip_probability"].native_unit_of_measurement == PERCENTAGE
+    assert entities["daily_forecast_day_1_night_precip_probability"].native_value == 5
+    assert entities["daily_forecast_day_1_day_precip_amount"].native_value == 0.02
+    assert entities["daily_forecast_day_1_day_precip_amount"].native_unit_of_measurement == UnitOfLength.INCHES
+    assert entities["daily_forecast_day_1_night_precip_amount"].native_value == 0
+    assert entities["daily_forecast_day_1_day_thunderstorm_probability"].native_value == 1
+    assert entities["daily_forecast_day_1_night_thunderstorm_probability"].native_value == 0
+    assert entities["daily_forecast_day_1_day_uv_index"].native_value == 6
+    assert entities["daily_forecast_day_1_night_uv_index"].native_value == 0
+    assert entities["daily_forecast_day_1_day_wind_speed"].native_value == 8
+    assert entities["daily_forecast_day_1_day_wind_speed"].native_unit_of_measurement == UnitOfSpeed.MILES_PER_HOUR
+    assert entities["daily_forecast_day_1_night_wind_speed"].native_value == 4
+    assert "daily_forecast_day_1_day_wind_gust" not in entities
+    assert "daily_forecast_day_1_night_wind_gust" not in entities
+    assert entities["daily_forecast_day_1_apparent_max"].native_value == 80
+    assert entities["daily_forecast_day_1_apparent_max"].native_unit_of_measurement == UnitOfTemperature.FAHRENHEIT
+    assert entities["daily_forecast_day_1_apparent_min"].native_value == 58
+    assert entities["daily_forecast_day_1_apparent_min"].native_unit_of_measurement == UnitOfTemperature.FAHRENHEIT
+
+    assert entities["daily_forecast_day_2_condition"].native_value == "rainy"
+    assert entities["daily_forecast_day_2_high"].native_value == 82
+    assert entities["daily_forecast_day_2_low"].native_value == 65
+    assert entities["daily_forecast_day_2_precip_probability"].native_value == 60
+    assert entities["daily_forecast_day_2_precip_amount"].native_value == 0.18
+    assert entities["daily_forecast_day_2_summary"].native_value == "Scattered showers."
+    assert entities["daily_forecast_day_2_day_phrase"].native_value == "Rain Showers"
+    assert entities["daily_forecast_day_2_night_phrase"].native_value == "Cloudy"
+    assert entities["daily_forecast_day_2_day_thunderstorm_probability"].native_value == 2
+    assert entities["daily_forecast_day_2_night_thunderstorm_probability"].native_value == 1
+    assert entities["daily_forecast_day_2_apparent_max"].native_value == 83
+    assert entities["daily_forecast_day_2_apparent_min"].native_value == 60
+
+    assert entities["daily_forecast_day_5_condition"].native_value is None
+    assert entities["daily_forecast_day_5_day_phrase"].native_value is None
+
+
+def test_pollen_sensor_values() -> None:
+    """Pollen sensors should map the first forecast segment from the TWC payload."""
+    coordinator = _coordinator(
+        pollen_forecast={
+            "metadata": {"expireTimeGmt": 1741827145},
+            "pollenForecast12hour": {
+                "fcstValid": [1741820400],
+                "grassPollenIndex": [1],
+                "grassPollenCategory": ["Low"],
+                "treePollenIndex": [3],
+                "treePollenCategory": ["High"],
+                "ragweedPollenIndex": [0],
+                "ragweedPollenCategory": ["None"],
+            },
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_POLLEN: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.pollen_entity_descriptions()
+        ]
+    }
+
+    assert entities["pollen_forecast_time"].native_value == datetime(
+        2025, 3, 12, 23, 0, tzinfo=UTC
+    )
+    assert entities["pollen_forecast_time"].device_class == SensorDeviceClass.TIMESTAMP
+    assert entities["pollen_expiration_time"].native_value == datetime(
+        2025, 3, 13, 0, 52, 25, tzinfo=UTC
+    )
+    assert entities["pollen_grass_index"].native_value == 1
+    assert entities["pollen_grass_category"].native_value == "Low"
+    assert entities["pollen_tree_index"].native_value == 3
+    assert entities["pollen_tree_category"].native_value == "High"
+    assert entities["pollen_ragweed_index"].native_value == 0
+    assert entities["pollen_ragweed_category"].native_value == "None"
+
+
+def test_pollen_sensor_values_are_unavailable_when_payload_is_missing() -> None:
+    """Pollen sensors should stay unavailable when endpoint data is absent."""
+    coordinator = _coordinator(pollen_forecast={})
+    entry = _entry(options={CONF_ENABLE_POLLEN: True})
+    entity = next(
+        entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.pollen_entity_descriptions()
+        ]
+        if entity.entity_description.key == "pollen_grass_index"
     )
 
     assert entity.native_value is None

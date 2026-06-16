@@ -382,7 +382,7 @@ cards:
 
   - type: custom:meteoalarm-card
     entities:
-      - entity: sensor.the_weather_company_alert_count
+      - entity: sensor.twc_alert_count
     integration: meteoalarm
     override_headline: true
 

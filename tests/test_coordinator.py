@@ -9,7 +9,12 @@ import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.ha_weather_provider.api import TWCAuthError, TWCRequestError
+from custom_components.ha_weather_provider.api import (
+    TWCAuthError,
+    TWCNoDataError,
+    TWCPermissionError,
+    TWCRequestError,
+)
 from custom_components.ha_weather_provider.coordinator import (
     TWCWeatherCoordinator,
     TWCWeatherData,
@@ -35,7 +40,57 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         daily_forecast={"temperatureMax": [75]},
         hourly_forecast={"temperature": [72, 71]},
         alert_headlines={"alerts": [{"eventDescription": "Tornado Warning"}]},
+        pollen_forecast={},
     )
+    client.async_get_pollen_forecast.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_coordinator_fetches_pollen_when_enabled(hass) -> None:
+    """Coordinator should merge pollen forecast data when pollen is enabled."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_pollen_forecast.return_value = {
+        "pollenForecast12hour": {"grassPollenIndex": [1]}
+    }
+    coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.pollen_forecast == {
+        "pollenForecast12hour": {"grassPollenIndex": [1]}
+    }
+    client.async_get_pollen_forecast.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error",
+    [
+        TWCNoDataError("empty"),
+        TWCAuthError("bad key for optional endpoint"),
+        TWCPermissionError("no access"),
+    ],
+)
+async def test_coordinator_keeps_weather_data_when_optional_pollen_unavailable(
+    hass, error
+) -> None:
+    """Optional pollen endpoint availability and entitlement failures should not fail refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_pollen_forecast.side_effect = error
+    coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.current == {"temperature": 72}
+    assert data.pollen_forecast == {}
 
 
 def test_coordinator_uses_configured_update_interval(hass) -> None:
