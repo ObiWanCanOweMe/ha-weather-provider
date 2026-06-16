@@ -516,6 +516,49 @@ def test_pollen_sensor_values_are_unavailable_when_payload_is_missing() -> None:
     assert entity.native_value is None
 
 
+def test_pollen_forecast_sensors_fall_back_to_observation_values() -> None:
+    """Pollen forecast sensors should use observation data when forecast is absent."""
+    coordinator = _coordinator(
+        pollen_forecast={},
+        pollen_observation={
+            "pollenobservations": [
+                {
+                    "pollenobservation": [
+                        {
+                            "pollen_type": "Tree",
+                            "pollen_idx": "1",
+                            "pollen_desc": "Low",
+                            "pollen_cnt": 15,
+                        },
+                        {
+                            "pollen_type": "Grass",
+                            "pollen_idx": "1",
+                            "pollen_desc": "Low",
+                            "pollen_cnt": 8,
+                        },
+                    ],
+                }
+            ],
+        },
+    )
+    entry = _entry(options={CONF_ENABLE_POLLEN: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.pollen_entity_descriptions()
+        ]
+    }
+
+    assert entities["pollen_tree_index"].native_value == 1
+    assert entities["pollen_tree_category"].native_value == "Low"
+    assert entities["pollen_grass_index"].native_value == 1
+    assert entities["pollen_grass_category"].native_value == "Low"
+    assert entities["pollen_ragweed_index"].native_value is None
+    assert entities["pollen_ragweed_category"].native_value is None
+
+
 def test_pollen_observation_sensor_values() -> None:
     """Pollen sensors should map U.S. observation values from the TWC payload."""
     coordinator = _coordinator(

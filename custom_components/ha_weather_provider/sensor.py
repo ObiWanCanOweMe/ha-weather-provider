@@ -191,6 +191,26 @@ def _pollen_expiration_time(data: TWCWeatherData) -> datetime | None:
     return _timestamp_from_epoch(_pollen_metadata(data).get("expireTimeGmt"))
 
 
+def _pollen_index_value(
+    data: TWCWeatherData, forecast_key: str, observation_type: str
+) -> Any:
+    """Return a pollen forecast index with observation fallback."""
+    return _first_present(
+        _pollen_series_value(data, forecast_key),
+        _pollen_observation_entry_numeric_value(data, observation_type, "pollen_idx"),
+    )
+
+
+def _pollen_category_value(
+    data: TWCWeatherData, forecast_key: str, observation_type: str
+) -> Any:
+    """Return a pollen forecast category with observation fallback."""
+    return _first_present(
+        _pollen_series_value(data, forecast_key),
+        _pollen_observation_entry_value(data, observation_type, "pollen_desc"),
+    )
+
+
 def _present(value: Any) -> bool:
     """Return whether a payload value should be exposed."""
     return value is not None and value != ""
@@ -766,26 +786,28 @@ POLLEN_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
         name="Pollen Grass Index",
         icon="mdi:grass",
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: _pollen_series_value(data, "grassPollenIndex"),
+        value_fn=lambda data: _pollen_index_value(data, "grassPollenIndex", "Grass"),
     ),
     TWCSensorEntityDescription(
         key="pollen_grass_category",
         name="Pollen Grass Category",
         icon="mdi:grass",
-        value_fn=lambda data: _pollen_series_value(data, "grassPollenCategory"),
+        value_fn=lambda data: _pollen_category_value(
+            data, "grassPollenCategory", "Grass"
+        ),
     ),
     TWCSensorEntityDescription(
         key="pollen_tree_index",
         name="Pollen Tree Index",
         icon="mdi:tree",
         state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: _pollen_series_value(data, "treePollenIndex"),
+        value_fn=lambda data: _pollen_index_value(data, "treePollenIndex", "Tree"),
     ),
     TWCSensorEntityDescription(
         key="pollen_tree_category",
         name="Pollen Tree Category",
         icon="mdi:tree",
-        value_fn=lambda data: _pollen_series_value(data, "treePollenCategory"),
+        value_fn=lambda data: _pollen_category_value(data, "treePollenCategory", "Tree"),
     ),
     TWCSensorEntityDescription(
         key="pollen_ragweed_index",
