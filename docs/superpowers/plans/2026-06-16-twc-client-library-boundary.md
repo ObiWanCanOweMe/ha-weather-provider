@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract TWC API access and reusable payload normalization out of the Home Assistant integration and into a small Python package inside this repo.
+**Goal:** Extract TWC API access and reusable payload normalization out of the Home Assistant integration modules and into a small client package shipped inside the integration for now.
 
-**Architecture:** Create a `twc_weather_client` package outside `custom_components` and move request execution, TWC exceptions, endpoint construction, and shared parsing helpers into it. Keep Home Assistant modules responsible for config entries, coordinators, entity classes, HA units, entity descriptions, and dashboard docs.
+**Architecture:** Create `custom_components/ha_weather_provider/twc_weather_client/` and move request execution, TWC exceptions, endpoint construction, and shared parsing helpers into it. This is a shippable integration subpackage until a separately published `twc_weather_client` distribution exists. Keep Home Assistant modules responsible for config entries, coordinators, entity classes, HA units, entity descriptions, and dashboard docs.
 
 **Tech Stack:** Python 3.14, aiohttp, Home Assistant custom integration APIs, pytest, pytest-homeassistant-custom-component, aioresponses, ruff, obi-dev-harness.
 
@@ -13,8 +13,8 @@
 ### Task 1: Add Client Package Errors
 
 **Files:**
-- Create: `twc_weather_client/__init__.py`
-- Create: `twc_weather_client/errors.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/errors.py`
 - Modify: `custom_components/ha_weather_provider/api.py`
 - Test: `tests/test_twc_client_errors.py`
 
@@ -23,9 +23,9 @@
 Create `tests/test_twc_client_errors.py`:
 
 ```python
-"""Tests for the standalone TWC client package exports."""
+"""Tests for the integration TWC client package exports."""
 
-from twc_weather_client import (
+from custom_components.ha_weather_provider.twc_weather_client import (
     TWCAuthError,
     TWCError,
     TWCNoDataError,
@@ -35,7 +35,7 @@ from twc_weather_client import (
 
 
 def test_twc_client_exports_errors() -> None:
-    """The standalone package exposes all public TWC exceptions."""
+    """The integration package exposes all public TWC exceptions."""
     assert issubclass(TWCAuthError, TWCError)
     assert issubclass(TWCNoDataError, TWCError)
     assert issubclass(TWCPermissionError, TWCError)
@@ -46,11 +46,11 @@ def test_twc_client_exports_errors() -> None:
 
 Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_twc_client_errors.py -q`
 
-Expected: FAIL with `ModuleNotFoundError: No module named 'twc_weather_client'`.
+Expected: FAIL with `ModuleNotFoundError` for the integration `twc_weather_client` subpackage.
 
 - [ ] **Step 3: Add package error classes**
 
-Create `twc_weather_client/errors.py`:
+Create `custom_components/ha_weather_provider/twc_weather_client/errors.py`:
 
 ```python
 """Errors raised by the The Weather Company client package."""
@@ -78,7 +78,7 @@ class TWCRequestError(TWCError):
     """TWC request failed."""
 ```
 
-Create `twc_weather_client/__init__.py`:
+Create `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
 
 ```python
 """The Weather Company async client and payload helpers."""
@@ -105,7 +105,7 @@ __all__ = [
 Update `custom_components/ha_weather_provider/api.py` to import these errors instead of defining them locally:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCError,
     TWCNoDataError,
@@ -125,7 +125,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add twc_weather_client/__init__.py twc_weather_client/errors.py custom_components/ha_weather_provider/api.py tests/test_twc_client_errors.py
+git add custom_components/ha_weather_provider/twc_weather_client/__init__.py custom_components/ha_weather_provider/twc_weather_client/errors.py custom_components/ha_weather_provider/api.py tests/test_twc_client_errors.py
 git commit -m "Extract TWC client errors"
 ```
 

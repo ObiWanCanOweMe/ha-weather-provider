@@ -7,7 +7,8 @@ from typing import Any
 
 import aiohttp
 from aiohttp import ClientSession
-from twc_weather_client import (
+
+from .twc_weather_client import (
     TWCAuthError,
     TWCError,
     TWCNoDataError,
