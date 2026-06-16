@@ -23,6 +23,7 @@ from custom_components.ha_weather_provider.twc_weather_client import (
     TWCNoDataError,
     TWCRequestError,
     TWCPermissionError,
+    is_optional_endpoint_unavailable,
 )
 from custom_components.ha_weather_provider.const import (
     DEFAULT_AIR_QUALITY_SCALE,
@@ -77,6 +78,22 @@ def test_integration_defaults_match_client_package_defaults() -> None:
     assert DEFAULT_DAILY_FORECAST_DURATION == CLIENT_DEFAULT_DAILY_FORECAST_DURATION
     assert DEFAULT_HOURLY_FORECAST_DURATION == CLIENT_DEFAULT_HOURLY_FORECAST_DURATION
     assert DEFAULT_POLLEN_FORECAST_DURATION == CLIENT_DEFAULT_POLLEN_FORECAST_DURATION
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (TWCNoDataError("empty"), True),
+        (TWCPermissionError("no access"), True),
+        (TWCAuthError("bad key"), True),
+        (TWCRequestError("temporary failure"), False),
+    ],
+)
+def test_is_optional_endpoint_unavailable_classifies_expected_errors(
+    error: Exception, expected: bool
+) -> None:
+    """Optional endpoint helper classifies non-fatal availability failures."""
+    assert is_optional_endpoint_unavailable(error) is expected
 
 
 def _make_client(session: ClientSession) -> TWCClient:

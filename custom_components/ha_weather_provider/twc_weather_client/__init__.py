@@ -28,7 +28,7 @@ from .normalizers import (
     value,
 )
 
-_CLIENT_EXPORTS = frozenset({"TWCClient"})
+_CLIENT_EXPORTS = frozenset({"TWCClient", "is_optional_endpoint_unavailable"})
 
 __all__ = [
     "CONDITION_BY_ICON",
@@ -51,13 +51,16 @@ __all__ = [
     "series_value",
     "series_values",
     "value",
+    "is_optional_endpoint_unavailable",
 ]
 
 
 def __getattr__(name: str) -> object:
     """Load aiohttp-backed client exports only when requested."""
     if name in _CLIENT_EXPORTS:
-        from .client import TWCClient
+        from .client import TWCClient, is_optional_endpoint_unavailable
 
-        return TWCClient
+        if name == "TWCClient":
+            return TWCClient
+        return is_optional_endpoint_unavailable
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
