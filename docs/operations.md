@@ -32,7 +32,7 @@ Unexpected optional request failures reported as `TWCRequestError` raise a coord
 
 ## API key entitlement
 
-The Weather Company API keys can be entitled for different endpoint packages. A key can work for current observations, daily forecasts, hourly forecasts, and alert headlines while not being entitled for pollen, tropical weather, air quality, or other optional packages. When an optional package is not entitled, disable that option or leave the related entities unavailable.
+The Weather Company API keys can be entitled for different endpoint packages. A key can work for current observations, daily forecasts, hourly forecasts, and alert headlines while not being entitled for pollen, tropical weather, air quality, or other optional packages. When an optional package is not entitled, disable that option or expect the corresponding optional payload to remain empty; related sensors may expose no value or endpoint-specific empty states.
 
 ## Polling model
 

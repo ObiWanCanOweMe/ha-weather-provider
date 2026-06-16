@@ -25,3 +25,6 @@ def test_operations_doc_covers_polling_and_optional_endpoints() -> None:
     assert "/v2/indices/pollen/daypart" in text
     assert "/v1/geocode" in text
     assert "/v2/tropical/currentposition" in text
+    assert "no value or endpoint-specific empty states" in text
+    assert "related entities unavailable" not in text
+    assert "optional sensors unavailable" not in text

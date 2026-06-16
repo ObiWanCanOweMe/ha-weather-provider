@@ -66,7 +66,7 @@ These are worth evaluating for forks or vendored companion cards:
 | Simple Weather Card | Small surface area and direct weather entity consumption; a TWC-focused variant could avoid upstream compatibility churn. |
 | Custom Animated Weather Card | Sensor-heavy configuration maps well to generated TWC adapter sensors, but the card is provider-generic and may need TWC naming defaults. |
 | Platinum Weather Card | Richest demo surface, but has many assets and entity slots. A curated TWC preset or fork could reduce setup friction. |
-| Weather Conditions Card | Good showcase for TWC enrichment. Pollen, U.S. pollen observation, and air quality sensors are available when enabled. |
+| Weather Conditions Card | Good showcase for TWC enrichment. Pollen, U.S. pollen observation, and air quality sensors can be created when enabled and populate when endpoint data is returned. |
 | Meteoalarm Card | Direct fork is less attractive than building a TWC alert adapter that emits a supported warning schema. |
 
 Weather Radar Card and Horizon Card are less useful as forks for this integration because their primary data is not Weather Company API data.
