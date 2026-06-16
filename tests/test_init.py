@@ -14,6 +14,7 @@ from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
     CONF_ENABLE_POLLEN,
+    CONF_ENABLE_TROPICAL_WEATHER,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
@@ -198,6 +199,74 @@ async def test_async_setup_entry_disables_pollen_by_default(hass):
         await async_setup_entry(hass, entry)
 
     assert mock_coordinator.call_args.kwargs["pollen_enabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_passes_tropical_option_to_coordinator(hass):
+    """Setup should pass the selected tropical weather option into the coordinator."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_ENABLE_TROPICAL_WEATHER: True},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["tropical_enabled"] is True
+
+
+@pytest.mark.asyncio
+async def test_async_setup_entry_disables_tropical_by_default(hass):
+    """Setup should leave tropical weather disabled unless selected."""
+    entry = SimpleNamespace(
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={},
+    )
+    coordinator = Mock()
+    coordinator.async_config_entry_first_refresh = AsyncMock()
+
+    with patch(
+        "custom_components.ha_weather_provider.async_get_clientsession",
+        return_value=object(),
+    ), patch(
+        "custom_components.ha_weather_provider.TWCClient", return_value=object()
+    ), patch(
+        "custom_components.ha_weather_provider.TWCWeatherCoordinator",
+        return_value=coordinator,
+    ) as mock_coordinator, patch.object(
+        hass.config_entries,
+        "async_forward_entry_setups",
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert mock_coordinator.call_args.kwargs["tropical_enabled"] is False
 
 
 @pytest.mark.asyncio
