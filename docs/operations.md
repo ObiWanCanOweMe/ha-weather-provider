@@ -37,3 +37,11 @@ The Weather Company API keys can be entitled for different endpoint packages. A 
 ## Polling model
 
 The Weather Company Standard Weather Data package is polled over HTTPS. The integration uses request/response API calls and does not use webhooks or MQTT.
+
+## Local development
+
+The `scripts/develop` helper starts Home Assistant with `custom_components` on `PYTHONPATH`, matching the custom integration layout used by common blueprint repositories.
+
+## HACS metadata
+
+The repository includes `hacs.json` to declare the integration display name and minimum Home Assistant/HACS versions for future HACS distribution.
