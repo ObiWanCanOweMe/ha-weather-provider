@@ -28,13 +28,14 @@ from .const import (
     UNIT_SYSTEMS,
 )
 from .coordinator import TWCWeatherCoordinator, TWCWeatherData
-from .weather import (
-    _condition,
-    _first_daypart_value,
-    _forecast_high,
-    _series_value,
-    _series_values,
+from .twc_weather_client.normalizers import (
+    condition_from_twc as _condition,
+    first_daypart_value as _first_daypart_value,
+    series_value as _series_value,
+    series_values as _series_values,
+    value as _value,
 )
+from .weather import _forecast_high
 
 
 SENSOR_NAME_PREFIX = "TWC"
@@ -47,12 +48,6 @@ class TWCSensorEntityDescription(SensorEntityDescription, frozen_or_thawed=True)
     unit_key: str | None = None
     unit_fn: Callable[[TWCWeatherData], str | None] | None = None
     attr_fn: Callable[[TWCWeatherData], dict[str, Any]] | None = None
-
-
-def _value(data: dict[str, Any], key: str) -> Any:
-    """Return a non-null value from a TWC payload."""
-    value = data.get(key)
-    return None if value == "" else value
 
 
 def _alert_count(data: TWCWeatherData) -> int:
