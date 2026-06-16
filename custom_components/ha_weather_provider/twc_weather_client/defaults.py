@@ -1,0 +1,15 @@
+"""Default option values for The Weather Company client package."""
+
+from __future__ import annotations
+
+DEFAULT_DAILY_FORECAST_DURATION = "7day"
+DEFAULT_HOURLY_FORECAST_DURATION = "2day"
+DEFAULT_POLLEN_FORECAST_DURATION = "3day"
+DEFAULT_AIR_QUALITY_SCALE = "EPA"
+
+__all__ = [
+    "DEFAULT_AIR_QUALITY_SCALE",
+    "DEFAULT_DAILY_FORECAST_DURATION",
+    "DEFAULT_HOURLY_FORECAST_DURATION",
+    "DEFAULT_POLLEN_FORECAST_DURATION",
+]

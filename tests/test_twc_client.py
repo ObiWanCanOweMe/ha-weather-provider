@@ -8,12 +8,22 @@ from aioresponses import aioresponses
 from yarl import URL
 
 from custom_components.ha_weather_provider.twc_weather_client import (
+    DEFAULT_AIR_QUALITY_SCALE as CLIENT_DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION as CLIENT_DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION as CLIENT_DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION as CLIENT_DEFAULT_POLLEN_FORECAST_DURATION,
     TWCAuthError,
     TWCClient,
     TWCError,
     TWCNoDataError,
     TWCRequestError,
     TWCPermissionError,
+)
+from custom_components.ha_weather_provider.const import (
+    DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
 )
 from custom_components.ha_weather_provider.twc_weather_client.client import (
     BASE_URL,
@@ -26,6 +36,14 @@ LATITUDE = 40.58
 LONGITUDE = -111.66
 UNITS = "e"
 LANGUAGE = "en-US"
+
+
+def test_integration_defaults_match_client_package_defaults() -> None:
+    """Integration defaults are shared with the TWC client package."""
+    assert DEFAULT_AIR_QUALITY_SCALE == CLIENT_DEFAULT_AIR_QUALITY_SCALE
+    assert DEFAULT_DAILY_FORECAST_DURATION == CLIENT_DEFAULT_DAILY_FORECAST_DURATION
+    assert DEFAULT_HOURLY_FORECAST_DURATION == CLIENT_DEFAULT_HOURLY_FORECAST_DURATION
+    assert DEFAULT_POLLEN_FORECAST_DURATION == CLIENT_DEFAULT_POLLEN_FORECAST_DURATION
 
 
 def _make_client(session: ClientSession) -> TWCClient:

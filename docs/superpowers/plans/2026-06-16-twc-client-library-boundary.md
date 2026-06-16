@@ -133,8 +133,10 @@ git commit -m "Extract TWC client errors"
 
 **Files:**
 - Create: `custom_components/ha_weather_provider/twc_weather_client/client.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/defaults.py`
 - Modify: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
 - Modify: `custom_components/ha_weather_provider/api.py`
+- Modify: `custom_components/ha_weather_provider/const.py`
 - Modify: `tests/test_api.py`
 - Test: `tests/test_twc_client.py`
 
@@ -245,6 +247,12 @@ from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
+from .defaults import (
+    DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
+)
 from .errors import (
     TWCAuthError,
     TWCNoDataError,
@@ -261,10 +269,6 @@ POLLEN_FORECAST_PATH_PREFIX = "/v2/indices/pollen/daypart"
 POLLEN_OBSERVATION_PATH = "/v1/geocode/{latitude}/{longitude}/observations/pollen.json"
 TROPICAL_CURRENT_POSITION_PATH = "/v2/tropical/currentposition"
 AIR_QUALITY_PATH = "/v3/wx/globalAirQuality"
-DEFAULT_DAILY_FORECAST_DURATION = "7day"
-DEFAULT_HOURLY_FORECAST_DURATION = "2day"
-DEFAULT_POLLEN_FORECAST_DURATION = "3day"
-DEFAULT_AIR_QUALITY_SCALE = "EPA"
 ```
 
 The constructor signature must remain:
@@ -285,6 +289,7 @@ def __init__(
 ```
 
 Keep `_async_get_json` and `_raise_for_status` behavior byte-for-byte equivalent except for imports.
+Add `custom_components/ha_weather_provider/twc_weather_client/defaults.py` for the shared default values and import those names from `custom_components/ha_weather_provider/const.py` instead of copying the strings there.
 
 - [ ] **Step 4: Export the client from the package**
 
@@ -296,6 +301,12 @@ Update `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
 from __future__ import annotations
 
 from .client import TWCClient
+from .defaults import (
+    DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
+)
 from .errors import (
     TWCAuthError,
     TWCError,
@@ -305,6 +316,10 @@ from .errors import (
 )
 
 __all__ = [
+    "DEFAULT_AIR_QUALITY_SCALE",
+    "DEFAULT_DAILY_FORECAST_DURATION",
+    "DEFAULT_HOURLY_FORECAST_DURATION",
+    "DEFAULT_POLLEN_FORECAST_DURATION",
     "TWCAuthError",
     "TWCClient",
     "TWCError",
