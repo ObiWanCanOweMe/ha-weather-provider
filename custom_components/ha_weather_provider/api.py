@@ -7,6 +7,13 @@ from typing import Any
 
 import aiohttp
 from aiohttp import ClientSession
+from twc_weather_client import (
+    TWCAuthError,
+    TWCError,
+    TWCNoDataError,
+    TWCPermissionError,
+    TWCRequestError,
+)
 
 from .const import (
     DEFAULT_AIR_QUALITY_SCALE,
@@ -29,26 +36,6 @@ POLLEN_OBSERVATION_PATH = (
 )
 TROPICAL_CURRENT_POSITION_PATH = "/v2/tropical/currentposition"
 AIR_QUALITY_PATH = "/v3/wx/globalAirQuality"
-
-
-class TWCError(Exception):
-    """Base error for TWC client failures."""
-
-
-class TWCAuthError(TWCError):
-    """TWC rejected the configured API key."""
-
-
-class TWCPermissionError(TWCError):
-    """TWC API key does not have access to the requested endpoint."""
-
-
-class TWCNoDataError(TWCError):
-    """TWC returned no data for the request."""
-
-
-class TWCRequestError(TWCError):
-    """TWC request failed."""
 
 
 class TWCClient:
