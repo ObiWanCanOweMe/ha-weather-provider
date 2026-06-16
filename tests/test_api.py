@@ -15,6 +15,7 @@ from custom_components.ha_weather_provider.api import (
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
     POLLEN_FORECAST_PATH,
+    TROPICAL_CURRENT_POSITION_PATH,
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -252,6 +253,93 @@ async def test_async_get_pollen_forecast_returns_empty_for_unavailable_endpoint(
 
     assert result == {}
     _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_tropical_current_position_calls_twc_tropical_endpoint() -> None:
+    """Tropical current position call returns active storm payloads."""
+    url = f"{api.BASE_URL}{TROPICAL_CURRENT_POSITION_PATH}"
+    payload = {
+        "currentPosition": [
+            {
+                "storm_id": "AL012026",
+                "storm_name": "Alex",
+                "basin": "AL",
+            }
+        ]
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "source": "default",
+                            "basin": "all",
+                            "language": LANGUAGE,
+                            "format": "json",
+                            "units": UNITS,
+                            "nautical": "false",
+                        }
+                    )
+                ),
+                payload=payload,
+            )
+
+            result = await client.async_get_tropical_current_position()
+
+    assert result == payload
+    assert len(mocked.requests) == 1
+    (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
+    assert actual_method == "GET"
+    assert actual_url.scheme == "https"
+    assert actual_url.host == URL(url).host
+    assert actual_url.path == URL(url).path
+    request = calls[0]
+    assert request.kwargs["params"] == {
+        "apiKey": API_KEY,
+        "source": "default",
+        "basin": "all",
+        "language": LANGUAGE,
+        "format": "json",
+        "units": UNITS,
+        "nautical": "false",
+    }
+    assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 401, 403])
+async def test_async_get_tropical_current_position_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Tropical endpoint no-data and entitlement failures should be non-fatal."""
+    url = f"{api.BASE_URL}{TROPICAL_CURRENT_POSITION_PATH}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "source": "default",
+                            "basin": "all",
+                            "language": LANGUAGE,
+                            "format": "json",
+                            "units": UNITS,
+                            "nautical": "false",
+                        }
+                    )
+                ),
+                status=status,
+            )
+
+            result = await client.async_get_tropical_current_position()
+
+    assert result == {}
 
 
 @pytest.mark.asyncio
