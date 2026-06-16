@@ -23,6 +23,9 @@ HOURLY_FORECAST_PATH = f"{HOURLY_FORECAST_PATH_PREFIX}/{DEFAULT_HOURLY_FORECAST_
 ALERT_HEADLINES_PATH = "/v3/alerts/headlines"
 POLLEN_FORECAST_PATH_PREFIX = "/v2/indices/pollen/daypart"
 POLLEN_FORECAST_PATH = f"{POLLEN_FORECAST_PATH_PREFIX}/{DEFAULT_POLLEN_FORECAST_DURATION}"
+POLLEN_OBSERVATION_PATH = (
+    "/v1/geocode/{latitude}/{longitude}/observations/pollen.json"
+)
 TROPICAL_CURRENT_POSITION_PATH = "/v2/tropical/currentposition"
 
 
@@ -94,6 +97,13 @@ class TWCClient:
         return self._alert_query_params
 
     @property
+    def _pollen_observation_query_params(self) -> dict[str, str]:
+        return {
+            "apiKey": self._api_key,
+            "language": self._language,
+        }
+
+    @property
     def _tropical_query_params(self) -> dict[str, str]:
         return {
             "apiKey": self._api_key,
@@ -139,6 +149,19 @@ class TWCClient:
                 POLLEN_FORECAST_PATH, params=self._pollen_query_params
             )
         except (TWCNoDataError, TWCPermissionError):
+            return {}
+
+    async def async_get_pollen_observation(self) -> dict[str, Any]:
+        """Return U.S. pollen observation data, when the endpoint is available."""
+        try:
+            return await self._async_get_json(
+                POLLEN_OBSERVATION_PATH.format(
+                    latitude=self._latitude,
+                    longitude=self._longitude,
+                ),
+                params=self._pollen_observation_query_params,
+            )
+        except (TWCAuthError, TWCNoDataError, TWCPermissionError):
             return {}
 
     async def async_get_tropical_current_position(self) -> dict[str, Any]:

@@ -61,6 +61,7 @@ def _coordinator(
     *,
     daily_forecast: dict[str, object] | None = None,
     pollen_forecast: dict[str, object] | None = None,
+    pollen_observation: dict[str, object] | None = None,
     tropical_current_position: dict[str, object] | None = None,
 ) -> SimpleNamespace:
     """Return coordinator-shaped test data for sensor entities."""
@@ -105,6 +106,7 @@ def _coordinator(
                 ]
             },
             pollen_forecast=pollen_forecast or {},
+            pollen_observation=pollen_observation or {},
             tropical_current_position=tropical_current_position or {},
         )
     )
@@ -147,6 +149,23 @@ async def test_sensor_setup_adds_pollen_entities_when_pollen_enabled(hass) -> No
         "entry-id_pollen_tree_category",
         "entry-id_pollen_ragweed_index",
         "entry-id_pollen_ragweed_category",
+        "entry-id_pollen_observation_report_time",
+        "entry-id_pollen_observation_expiration_time",
+        "entry-id_pollen_observation_total_count",
+        "entry-id_pollen_observation_total_index",
+        "entry-id_pollen_observation_total_description",
+        "entry-id_pollen_observation_tree_count",
+        "entry-id_pollen_observation_tree_index",
+        "entry-id_pollen_observation_tree_description",
+        "entry-id_pollen_observation_grass_count",
+        "entry-id_pollen_observation_grass_index",
+        "entry-id_pollen_observation_grass_description",
+        "entry-id_pollen_observation_weed_count",
+        "entry-id_pollen_observation_weed_index",
+        "entry-id_pollen_observation_weed_description",
+        "entry-id_pollen_observation_mold_count",
+        "entry-id_pollen_observation_mold_index",
+        "entry-id_pollen_observation_mold_description",
     ]
 
 
@@ -495,6 +514,114 @@ def test_pollen_sensor_values_are_unavailable_when_payload_is_missing() -> None:
     )
 
     assert entity.native_value is None
+
+
+def test_pollen_observation_sensor_values() -> None:
+    """Pollen sensors should map U.S. observation values from the TWC payload."""
+    coordinator = _coordinator(
+        pollen_observation={
+            "metadata": {"expire_time_gmt": 1397271306},
+            "pollenobservations": [
+                {
+                    "class": "pollenobs",
+                    "loc_id": "ATL",
+                    "loc_nm": "Atlanta",
+                    "loc_st": "GA",
+                    "rpt_dt": "2014-04-08T15:00:00Z",
+                    "process_time_gmt": 1396983306,
+                    "treenames": [
+                        {"tree_nm": "Oak"},
+                        {"tree_nm": "Birch"},
+                        {"tree_nm": "Sweet Gum"},
+                    ],
+                    "total_pollen_cnt": 1156,
+                    "total_pollen_idx": "4",
+                    "total_pollen_desc": "High",
+                    "stn_cmnt_cd": "null",
+                    "stn_cmnt": "null",
+                    "pollenobservation": [
+                        {
+                            "pollen_type": "Tree",
+                            "pollen_idx": "4",
+                            "pollen_desc": "Very High",
+                            "pollen_cnt": 1156,
+                        },
+                        {
+                            "pollen_type": "Grass",
+                            "pollen_idx": "0",
+                            "pollen_desc": "None",
+                            "pollen_cnt": 0,
+                        },
+                        {
+                            "pollen_type": "Weed",
+                            "pollen_idx": "0",
+                            "pollen_desc": "None",
+                            "pollen_cnt": 0,
+                        },
+                        {
+                            "pollen_type": "Mold",
+                            "pollen_idx": "9",
+                            "pollen_desc": "No Data",
+                            "pollen_cnt": None,
+                        },
+                    ],
+                }
+            ],
+        }
+    )
+    entry = _entry(options={CONF_ENABLE_POLLEN: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.pollen_entity_descriptions()
+        ]
+    }
+
+    assert entities["pollen_observation_report_time"].native_value == datetime(
+        2014, 4, 8, 15, 0, tzinfo=UTC
+    )
+    assert (
+        entities["pollen_observation_report_time"].device_class
+        == SensorDeviceClass.TIMESTAMP
+    )
+    assert entities["pollen_observation_expiration_time"].native_value == datetime(
+        2014, 4, 12, 2, 55, 6, tzinfo=UTC
+    )
+    assert entities["pollen_observation_total_count"].native_value == 1156
+    assert entities["pollen_observation_total_index"].native_value == 4
+    assert entities["pollen_observation_total_description"].native_value == "High"
+    assert entities["pollen_observation_tree_count"].native_value == 1156
+    assert entities["pollen_observation_tree_index"].native_value == 4
+    assert entities["pollen_observation_tree_description"].native_value == "Very High"
+    assert entities["pollen_observation_grass_count"].native_value == 0
+    assert entities["pollen_observation_grass_index"].native_value == 0
+    assert entities["pollen_observation_grass_description"].native_value == "None"
+    assert entities["pollen_observation_weed_count"].native_value == 0
+    assert entities["pollen_observation_weed_index"].native_value == 0
+    assert entities["pollen_observation_weed_description"].native_value == "None"
+    assert entities["pollen_observation_mold_count"].native_value is None
+    assert entities["pollen_observation_mold_index"].native_value == 9
+    assert entities["pollen_observation_mold_description"].native_value == "No Data"
+
+
+def test_pollen_observation_sensor_values_are_unavailable_when_payload_is_missing() -> None:
+    """Pollen observation sensors should stay unavailable when endpoint data is absent."""
+    coordinator = _coordinator(pollen_observation={})
+    entry = _entry(options={CONF_ENABLE_POLLEN: True})
+
+    entities = {
+        entity.entity_description.key: entity
+        for entity in [
+            TWCSensorEntity(coordinator, entry, description)
+            for description in TWCSensorEntity.pollen_entity_descriptions()
+        ]
+    }
+
+    assert entities["pollen_observation_report_time"].native_value is None
+    assert entities["pollen_observation_total_count"].native_value is None
+    assert entities["pollen_observation_tree_description"].native_value is None
 
 
 def test_tropical_sensor_values() -> None:

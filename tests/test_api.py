@@ -15,6 +15,7 @@ from custom_components.ha_weather_provider.api import (
     DAILY_FORECAST_PATH,
     HOURLY_FORECAST_PATH,
     POLLEN_FORECAST_PATH,
+    POLLEN_OBSERVATION_PATH,
     TROPICAL_CURRENT_POSITION_PATH,
     TWCAuthError,
     TWCClient,
@@ -74,6 +75,21 @@ def _assert_request(
     if include_units:
         expected_params["units"] = UNITS
     assert request.kwargs["params"] == expected_params
+    assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
+
+
+def _assert_pollen_observation_request(mocked: aioresponses, url: str) -> None:
+    assert len(mocked.requests) == 1
+    (actual_method, actual_url), calls = next(iter(mocked.requests.items()))
+    assert actual_method == "GET"
+    assert actual_url.scheme == "https"
+    assert actual_url.host == URL(url).host
+    assert actual_url.path == URL(url).path
+    request = calls[0]
+    assert request.kwargs["params"] == {
+        "apiKey": API_KEY,
+        "language": LANGUAGE,
+    }
     assert request.kwargs["headers"] == {"Accept-Encoding": "gzip"}
 
 
@@ -253,6 +269,80 @@ async def test_async_get_pollen_forecast_returns_empty_for_unavailable_endpoint(
 
     assert result == {}
     _assert_request(mocked, "GET", url, include_units=False)
+
+
+@pytest.mark.asyncio
+async def test_async_get_pollen_observation_calls_twc_pollen_endpoint() -> None:
+    """Pollen observation call returns the payload from the expected endpoint."""
+    path = POLLEN_OBSERVATION_PATH.format(latitude=LATITUDE, longitude=LONGITUDE)
+    url = f"{api.BASE_URL}{path}"
+    payload = {
+        "metadata": {"expire_time_gmt": 1397271306},
+        "pollenobservations": [
+            {
+                "rpt_dt": "2014-04-08T15:00:00Z",
+                "total_pollen_cnt": 1156,
+                "total_pollen_idx": "4",
+                "total_pollen_desc": "High",
+                "pollenobservation": [
+                    {
+                        "pollen_type": "Tree",
+                        "pollen_idx": "4",
+                        "pollen_desc": "Very High",
+                        "pollen_cnt": 1156,
+                    }
+                ],
+            }
+        ],
+    }
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "language": LANGUAGE,
+                        }
+                    )
+                ),
+                payload=payload,
+            )
+
+            result = await client.async_get_pollen_observation()
+
+    assert result == payload
+    _assert_pollen_observation_request(mocked, url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [204, 401, 403])
+async def test_async_get_pollen_observation_returns_empty_for_unavailable_endpoint(
+    status: int,
+) -> None:
+    """Pollen observation no-data and entitlement failures should be non-fatal."""
+    path = POLLEN_OBSERVATION_PATH.format(latitude=LATITUDE, longitude=LONGITUDE)
+    url = f"{api.BASE_URL}{path}"
+    async with ClientSession() as session:
+        client = _make_client(session)
+        with aioresponses() as mocked:
+            mocked.get(
+                str(
+                    URL(url).with_query(
+                        {
+                            "apiKey": API_KEY,
+                            "language": LANGUAGE,
+                        }
+                    )
+                ),
+                status=status,
+            )
+
+            result = await client.async_get_pollen_observation()
+
+    assert result == {}
+    _assert_pollen_observation_request(mocked, url)
 
 
 @pytest.mark.asyncio

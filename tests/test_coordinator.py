@@ -41,6 +41,7 @@ async def test_coordinator_combines_current_and_forecast(hass) -> None:
         hourly_forecast={"temperature": [72, 71]},
         alert_headlines={"alerts": [{"eventDescription": "Tornado Warning"}]},
         pollen_forecast={},
+        pollen_observation={},
         tropical_current_position={},
     )
     client.async_get_pollen_forecast.assert_not_called()
@@ -58,6 +59,9 @@ async def test_coordinator_fetches_pollen_when_enabled(hass) -> None:
     client.async_get_pollen_forecast.return_value = {
         "pollenForecast12hour": {"grassPollenIndex": [1]}
     }
+    client.async_get_pollen_observation.return_value = {
+        "pollenobservations": [{"total_pollen_cnt": 1156}]
+    }
     coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
 
     data = await coordinator._async_update_data()
@@ -65,7 +69,11 @@ async def test_coordinator_fetches_pollen_when_enabled(hass) -> None:
     assert data.pollen_forecast == {
         "pollenForecast12hour": {"grassPollenIndex": [1]}
     }
+    assert data.pollen_observation == {
+        "pollenobservations": [{"total_pollen_cnt": 1156}]
+    }
     client.async_get_pollen_forecast.assert_awaited_once()
+    client.async_get_pollen_observation.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -87,12 +95,52 @@ async def test_coordinator_keeps_weather_data_when_optional_pollen_unavailable(
     client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
     client.async_get_alert_headlines.return_value = {"alerts": []}
     client.async_get_pollen_forecast.side_effect = error
+    client.async_get_pollen_observation.return_value = {
+        "pollenobservations": [{"total_pollen_cnt": 1156}]
+    }
     coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
 
     data = await coordinator._async_update_data()
 
     assert data.current == {"temperature": 72}
     assert data.pollen_forecast == {}
+    assert data.pollen_observation == {
+        "pollenobservations": [{"total_pollen_cnt": 1156}]
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error",
+    [
+        TWCNoDataError("empty"),
+        TWCAuthError("bad key for optional endpoint"),
+        TWCPermissionError("no access"),
+        TWCRequestError("temporary pollen observation failure"),
+    ],
+)
+async def test_coordinator_keeps_weather_data_when_optional_pollen_observation_unavailable(
+    hass, error
+) -> None:
+    """Optional pollen observation endpoint failures should not fail refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_pollen_forecast.return_value = {
+        "pollenForecast12hour": {"grassPollenIndex": [1]}
+    }
+    client.async_get_pollen_observation.side_effect = error
+    coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
+
+    data = await coordinator._async_update_data()
+
+    assert data.current == {"temperature": 72}
+    assert data.pollen_forecast == {
+        "pollenForecast12hour": {"grassPollenIndex": [1]}
+    }
+    assert data.pollen_observation == {}
 
 
 @pytest.mark.asyncio

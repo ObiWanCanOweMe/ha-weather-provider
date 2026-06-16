@@ -201,6 +201,144 @@ def _first_present(*values: Any) -> Any:
     return next((value for value in values if _present(value)), None)
 
 
+def _clean_pollen_observation_value(value: Any) -> Any:
+    """Return a displayable pollen observation value."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, str) and value.casefold() == "null":
+        return None
+    return value
+
+
+def _pollen_observation(data: TWCWeatherData) -> dict[str, Any]:
+    """Return the first U.S. pollen observation payload."""
+    observations = _first_present(
+        data.pollen_observation.get("pollenobservations"),
+        data.pollen_observation.get("pollenObservations"),
+    )
+    if isinstance(observations, list):
+        return next(
+            (observation for observation in observations if isinstance(observation, dict)),
+            {},
+        )
+    return observations if isinstance(observations, dict) else {}
+
+
+def _pollen_observation_metadata(data: TWCWeatherData) -> dict[str, Any]:
+    """Return the pollen observation metadata payload."""
+    metadata = data.pollen_observation.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _pollen_observation_entries(data: TWCWeatherData) -> list[dict[str, Any]]:
+    """Return typed pollen observation entries."""
+    entries = _first_present(
+        _pollen_observation(data).get("pollenobservation"),
+        _pollen_observation(data).get("pollenObservation"),
+    )
+    if isinstance(entries, list):
+        return [entry for entry in entries if isinstance(entry, dict)]
+    return [entries] if isinstance(entries, dict) else []
+
+
+def _pollen_observation_entry(
+    data: TWCWeatherData, pollen_type: str
+) -> dict[str, Any]:
+    """Return one typed pollen observation entry."""
+    requested_type = pollen_type.casefold()
+    return next(
+        (
+            entry
+            for entry in _pollen_observation_entries(data)
+            if str(entry.get("pollen_type", "")).casefold() == requested_type
+        ),
+        {},
+    )
+
+
+def _number_from_pollen_observation_value(value: Any) -> int | float | None:
+    """Return a numeric pollen observation value."""
+    value = _clean_pollen_observation_value(value)
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    return int(numeric) if numeric.is_integer() else numeric
+
+
+def _timestamp_from_pollen_observation_value(value: Any) -> datetime | None:
+    """Return a pollen observation timestamp from epoch or ISO payload values."""
+    timestamp = _timestamp_from_epoch(value)
+    if timestamp is not None:
+        return timestamp
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return timestamp if timestamp.tzinfo is not None else None
+
+
+def _pollen_observation_report_time(data: TWCWeatherData) -> datetime | None:
+    """Return the pollen observation report time."""
+    observation = _pollen_observation(data)
+    return _timestamp_from_pollen_observation_value(
+        _first_present(observation.get("rpt_dt"), observation.get("process_time_gmt"))
+    )
+
+
+def _pollen_observation_expiration_time(data: TWCWeatherData) -> datetime | None:
+    """Return the pollen observation expiration time."""
+    metadata = _pollen_observation_metadata(data)
+    return _timestamp_from_pollen_observation_value(
+        _first_present(
+            metadata.get("expire_time_gmt"),
+            metadata.get("expireTimeGmt"),
+            data.pollen_observation.get("expire_time_gmt"),
+            data.pollen_observation.get("expireTimeGmt"),
+        )
+    )
+
+
+def _pollen_observation_total_value(data: TWCWeatherData, key: str) -> Any:
+    """Return a top-level pollen observation value."""
+    return _clean_pollen_observation_value(_pollen_observation(data).get(key))
+
+
+def _pollen_observation_total_numeric_value(
+    data: TWCWeatherData, key: str
+) -> int | float | None:
+    """Return a numeric top-level pollen observation value."""
+    return _number_from_pollen_observation_value(
+        _pollen_observation_total_value(data, key)
+    )
+
+
+def _pollen_observation_entry_value(
+    data: TWCWeatherData, pollen_type: str, key: str
+) -> Any:
+    """Return one typed pollen observation value."""
+    return _clean_pollen_observation_value(
+        _pollen_observation_entry(data, pollen_type).get(key)
+    )
+
+
+def _pollen_observation_entry_numeric_value(
+    data: TWCWeatherData, pollen_type: str, key: str
+) -> int | float | None:
+    """Return one numeric typed pollen observation value."""
+    return _number_from_pollen_observation_value(
+        _pollen_observation_entry_value(data, pollen_type, key)
+    )
+
+
 def _columnar_record(payload: dict[str, Any], index: int) -> dict[str, Any]:
     """Return one record from a columnar payload."""
     record: dict[str, Any] = {}
@@ -661,6 +799,148 @@ POLLEN_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
         name="Pollen Ragweed Category",
         icon="mdi:sprout",
         value_fn=lambda data: _pollen_series_value(data, "ragweedPollenCategory"),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_report_time",
+        name="Pollen Observation Report Time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_pollen_observation_report_time,
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_expiration_time",
+        name="Pollen Observation Expiration Time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_pollen_observation_expiration_time,
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_total_count",
+        name="Pollen Observation Total Count",
+        icon="mdi:counter",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_total_numeric_value(
+            data, "total_pollen_cnt"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_total_index",
+        name="Pollen Observation Total Index",
+        icon="mdi:flower-pollen",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_total_numeric_value(
+            data, "total_pollen_idx"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_total_description",
+        name="Pollen Observation Total Description",
+        icon="mdi:flower-pollen",
+        value_fn=lambda data: _pollen_observation_total_value(
+            data, "total_pollen_desc"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_tree_count",
+        name="Pollen Observation Tree Count",
+        icon="mdi:tree",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Tree", "pollen_cnt"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_tree_index",
+        name="Pollen Observation Tree Index",
+        icon="mdi:tree",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Tree", "pollen_idx"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_tree_description",
+        name="Pollen Observation Tree Description",
+        icon="mdi:tree",
+        value_fn=lambda data: _pollen_observation_entry_value(
+            data, "Tree", "pollen_desc"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_grass_count",
+        name="Pollen Observation Grass Count",
+        icon="mdi:grass",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Grass", "pollen_cnt"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_grass_index",
+        name="Pollen Observation Grass Index",
+        icon="mdi:grass",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Grass", "pollen_idx"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_grass_description",
+        name="Pollen Observation Grass Description",
+        icon="mdi:grass",
+        value_fn=lambda data: _pollen_observation_entry_value(
+            data, "Grass", "pollen_desc"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_weed_count",
+        name="Pollen Observation Weed Count",
+        icon="mdi:sprout",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Weed", "pollen_cnt"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_weed_index",
+        name="Pollen Observation Weed Index",
+        icon="mdi:sprout",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Weed", "pollen_idx"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_weed_description",
+        name="Pollen Observation Weed Description",
+        icon="mdi:sprout",
+        value_fn=lambda data: _pollen_observation_entry_value(
+            data, "Weed", "pollen_desc"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_mold_count",
+        name="Pollen Observation Mold Count",
+        icon="mdi:mushroom-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Mold", "pollen_cnt"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_mold_index",
+        name="Pollen Observation Mold Index",
+        icon="mdi:mushroom-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: _pollen_observation_entry_numeric_value(
+            data, "Mold", "pollen_idx"
+        ),
+    ),
+    TWCSensorEntityDescription(
+        key="pollen_observation_mold_description",
+        name="Pollen Observation Mold Description",
+        icon="mdi:mushroom-outline",
+        value_fn=lambda data: _pollen_observation_entry_value(
+            data, "Mold", "pollen_desc"
+        ),
     ),
 )
 
