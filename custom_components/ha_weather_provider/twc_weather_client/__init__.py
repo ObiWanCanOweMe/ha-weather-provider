@@ -9,9 +9,11 @@ from .errors import (
     TWCPermissionError,
     TWCRequestError,
 )
+from .client import TWCClient
 
 __all__ = [
     "TWCAuthError",
+    "TWCClient",
     "TWCError",
     "TWCNoDataError",
     "TWCPermissionError",
