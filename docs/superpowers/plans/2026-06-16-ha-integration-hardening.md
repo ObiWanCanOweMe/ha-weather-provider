@@ -10,6 +10,16 @@
 
 ---
 
+## Additional Reference
+
+Use `ludeeus/integration_blueprint` as a custom-integration layout reference during this plan. The relevant patterns are:
+
+- Keep integration runtime code under `custom_components/<domain>`.
+- Include manifest metadata such as `codeowners`, `documentation`, `iot_class`, `issue_tracker`, and `version`.
+- Add `hacs.json` with minimum Home Assistant and HACS compatibility metadata when targeting HACS distribution.
+- Keep a local development script that can start Home Assistant with `PYTHONPATH=custom_components`.
+- Document installation, configuration, contribution, release, and HACS expectations in repo-level docs.
+
 ## Prerequisite
 
 Run this plan only after `docs/superpowers/plans/2026-06-16-twc-client-library-boundary.md` is implemented, merged into `master`, and pulled locally.
@@ -513,7 +523,122 @@ git add docs/operations.md docs/weather-card-gallery-dependencies.md tests/test_
 git commit -m "Document polling and endpoint entitlements"
 ```
 
-### Task 5: Remove Tracked Generated Files
+### Task 5: Add HACS and Local Development Metadata
+
+**Files:**
+- Create: `hacs.json`
+- Create: `scripts/develop`
+- Modify: `docs/operations.md`
+- Test: `tests/test_repo_metadata.py`
+
+- [ ] **Step 1: Write repository metadata tests**
+
+Create `tests/test_repo_metadata.py`:
+
+```python
+"""Tests for custom integration repository metadata."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+HACS_PATH = Path("hacs.json")
+DEVELOP_SCRIPT_PATH = Path("scripts/develop")
+
+
+def test_hacs_metadata_declares_compatibility() -> None:
+    """HACS metadata declares the integration name and compatibility floors."""
+    hacs = json.loads(HACS_PATH.read_text(encoding="utf-8"))
+
+    assert hacs["name"] == "The Weather Company"
+    assert hacs["homeassistant"] >= "2026.3.2"
+    assert hacs["hacs"] >= "2.0.5"
+
+
+def test_develop_script_uses_custom_components_pythonpath() -> None:
+    """Local HA development script exposes custom_components on PYTHONPATH."""
+    text = DEVELOP_SCRIPT_PATH.read_text(encoding="utf-8")
+
+    assert "PYTHONPATH" in text
+    assert "custom_components" in text
+    assert "hass --config" in text
+```
+
+- [ ] **Step 2: Run the failing metadata tests**
+
+Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_repo_metadata.py -q`
+
+Expected: FAIL with `FileNotFoundError` for `hacs.json` or `scripts/develop`.
+
+- [ ] **Step 3: Add HACS metadata**
+
+Create `hacs.json`:
+
+```json
+{
+  "name": "The Weather Company",
+  "homeassistant": "2026.3.2",
+  "hacs": "2.0.5"
+}
+```
+
+- [ ] **Step 4: Add local development script**
+
+Create `scripts/develop`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+CONFIG_DIR="${PWD}/config"
+mkdir -p "${CONFIG_DIR}"
+
+if [[ ! -f "${CONFIG_DIR}/configuration.yaml" ]]; then
+  hass --config "${CONFIG_DIR}" --script ensure_config
+fi
+
+export PYTHONPATH="${PYTHONPATH:-}:${PWD}/custom_components"
+hass --config "${CONFIG_DIR}" --debug
+```
+
+Make it executable:
+
+```bash
+chmod +x scripts/develop
+```
+
+- [ ] **Step 5: Document HACS and local development metadata**
+
+Append to `docs/operations.md`:
+
+```markdown
+## Local development
+
+The `scripts/develop` helper starts Home Assistant with `custom_components` on `PYTHONPATH`, matching the custom integration layout used by common blueprint repositories.
+
+## HACS metadata
+
+The repository includes `hacs.json` to declare the integration display name and minimum Home Assistant/HACS versions for future HACS distribution.
+```
+
+- [ ] **Step 6: Run metadata tests**
+
+Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_repo_metadata.py tests/test_docs.py -q`
+
+Expected: PASS.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add hacs.json scripts/develop docs/operations.md tests/test_repo_metadata.py
+git commit -m "Add HACS and development metadata"
+```
+
+### Task 6: Remove Tracked Generated Files
 
 **Files:**
 - Modify: `.gitignore`
@@ -575,14 +700,14 @@ git commit -m "Remove generated cache files from repository"
 
 If nothing changed, do not create an empty commit.
 
-### Task 6: Final Verification
+### Task 7: Final Verification
 
 **Files:**
 - Modify: no files unless verification exposes a defect
 
 - [ ] **Step 1: Run targeted tests**
 
-Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_manifest.py tests/test_diagnostics.py tests/test_twc_client.py tests/test_coordinator.py tests/test_docs.py -q`
+Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_manifest.py tests/test_diagnostics.py tests/test_twc_client.py tests/test_coordinator.py tests/test_docs.py tests/test_repo_metadata.py -q`
 
 Expected: PASS.
 
