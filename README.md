@@ -26,15 +26,17 @@ Optional endpoints are requested only when enabled in the integration options. S
 
 ## Automatic Installation
 
-Use HACS as a custom repository.
+Use HACS as a custom repository after this project is mirrored to a public GitHub repository.
+
+HACS does not support GitLab-hosted custom repositories. Do not use the `git.kener.org` URL in HACS; it will not install from there. The repository URL must be a public GitHub repository URL. See [GitHub Mirror](docs/github-mirror.md) for the GitLab CI mirror setup.
 
 1. Open Home Assistant.
 2. Go to **HACS**.
 3. Open the HACS menu and choose **Custom repositories**.
-4. Add this repository URL:
+4. Add the public GitHub mirror URL:
 
    ```text
-   https://git.kener.org/my-projects/ha-weather-provider
+   https://github.com/<owner>/ha-weather-provider
    ```
 
 5. Select **Integration** as the category.

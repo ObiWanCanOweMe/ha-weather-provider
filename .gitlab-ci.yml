@@ -1,0 +1,39 @@
+stages:
+  - test
+  - mirror
+
+project-check:
+  stage: test
+  image: python:3.14-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - python -m pip install -r requirements-dev.txt
+  script:
+    - python -m compileall custom_components/ha_weather_provider
+    - python -m json.tool custom_components/ha_weather_provider/manifest.json
+    - python -m json.tool custom_components/ha_weather_provider/strings.json
+    - python -m json.tool custom_components/ha_weather_provider/translations/en.json
+    - python -m pytest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+sync-github:
+  stage: mirror
+  image: alpine/git:latest
+  needs:
+    - project-check
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: "0"
+  script:
+    - test -n "$GITHUB_SYNC_REPOSITORY"
+    - test -n "$GITHUB_SYNC_TOKEN"
+    - git config user.name "GitLab CI"
+    - git config user.email "gitlab-ci@git.kener.org"
+    - git remote add github "https://x-access-token:${GITHUB_SYNC_TOKEN}@github.com/${GITHUB_SYNC_REPOSITORY}.git"
+    - export GITHUB_SYNC_BRANCH="${GITHUB_SYNC_BRANCH:-$CI_DEFAULT_BRANCH}"
+    - git push github "HEAD:${GITHUB_SYNC_BRANCH}"
+    - git push github --tags
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $GITHUB_SYNC_REPOSITORY && $GITHUB_SYNC_TOKEN'
