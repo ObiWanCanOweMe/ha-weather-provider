@@ -93,7 +93,7 @@ async def test_form_creates_entry_with_install_options(hass):
                 CONF_ENABLE_TROPICAL_WEATHER: True,
                 CONF_EXTRA_ENTITIES: True,
                 CONF_HOURLY_FORECAST_DURATION: "6hour",
-                CONF_UPDATE_INTERVAL_MINUTES: 15,
+                CONF_UPDATE_INTERVAL_MINUTES: "15",
             },
         )
 
@@ -357,7 +357,7 @@ async def test_options_flow_configures_update_interval_controls(hass):
             result["flow_id"],
             user_input={
                 CONF_EXTRA_ENTITIES: False,
-                CONF_UPDATE_INTERVAL_MINUTES: 60,
+                CONF_UPDATE_INTERVAL_MINUTES: "60",
             },
         )
 

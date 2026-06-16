@@ -19,15 +19,15 @@
           "language": "Language"
         },
         "data_description": {
-          "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
-          "enable_air_quality": "Requests The Weather Company Global Air Quality endpoint and creates air quality sensors when data is available.",
-          "enable_pollen": "Requests The Weather Company pollen forecast and U.S. observation endpoints and creates pollen sensors when data is available.",
-          "enable_tropical_weather": "Requests The Weather Company tropical current-position endpoint and creates compact active storm summary sensors when data is available.",
-          "extra_entities": "Adds companion sensors for current conditions, rolling precipitation and snow amounts, alert count, observation time, integration version, and daily forecast adapter values.",
-          "hourly_forecast_duration": "The Weather Company hourly forecast endpoint to request.",
+          "daily_forecast_duration": "Controls how many days are requested from The Weather Company daily forecast endpoint. Longer durations provide more data, but Home Assistant and some cards may only display part of it.",
+          "enable_air_quality": "Creates air quality sensors for AQ index, category, health message, primary pollutant, and pollutant details. Enable this only if your API key includes the TWC Global Air Quality endpoint.",
+          "enable_pollen": "Creates pollen forecast and observation sensors for tree, grass, ragweed, mold, and report times. Enable this only if your API key includes the TWC pollen endpoints for your location.",
+          "enable_tropical_weather": "Creates compact tropical weather sensors for active storm count, active storm summary, update time, and expiration time. Enable this only if your API key includes the TWC tropical current-position endpoint.",
+          "extra_entities": "Creates companion sensors used by demo dashboards and custom cards. This includes current conditions, wind, pressure, UV, visibility, precipitation and snow totals, alert count, integration version, and daily forecast adapter sensors.",
+          "hourly_forecast_duration": "Controls how much hourly forecast data is requested from The Weather Company. Choose the smallest duration that covers the cards or automations you plan to use.",
           "latitude": "Use decimal degrees. North is positive, south is negative.",
           "longitude": "Use decimal degrees. East is positive, west is negative.",
-          "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
+          "update_interval_minutes": "Controls how often Home Assistant refreshes Weather Company data. Use a longer interval if you are watching API quota usage."
         }
       }
     },
@@ -53,13 +53,13 @@
           "update_interval_minutes": "Update interval"
         },
         "data_description": {
-          "daily_forecast_duration": "The Weather Company daily forecast endpoint to request.",
-          "enable_air_quality": "Requests The Weather Company Global Air Quality endpoint and creates air quality sensors when data is available.",
-          "enable_pollen": "Requests The Weather Company pollen forecast and U.S. observation endpoints and creates pollen sensors when data is available.",
-          "enable_tropical_weather": "Requests The Weather Company tropical current-position endpoint and creates compact active storm summary sensors when data is available.",
-          "extra_entities": "Adds companion sensors for current conditions, rolling precipitation and snow amounts, alert count, observation time, integration version, and daily forecast adapter values.",
-          "hourly_forecast_duration": "The Weather Company hourly forecast endpoint to request.",
-          "update_interval_minutes": "How often to refresh Weather Company data, in minutes."
+          "daily_forecast_duration": "Controls how many days are requested from The Weather Company daily forecast endpoint. Longer durations provide more data, but Home Assistant and some cards may only display part of it.",
+          "enable_air_quality": "Creates air quality sensors for AQ index, category, health message, primary pollutant, and pollutant details. Enable this only if your API key includes the TWC Global Air Quality endpoint.",
+          "enable_pollen": "Creates pollen forecast and observation sensors for tree, grass, ragweed, mold, and report times. Enable this only if your API key includes the TWC pollen endpoints for your location.",
+          "enable_tropical_weather": "Creates compact tropical weather sensors for active storm count, active storm summary, update time, and expiration time. Enable this only if your API key includes the TWC tropical current-position endpoint.",
+          "extra_entities": "Creates companion sensors used by demo dashboards and custom cards. This includes current conditions, wind, pressure, UV, visibility, precipitation and snow totals, alert count, integration version, and daily forecast adapter sensors.",
+          "hourly_forecast_duration": "Controls how much hourly forecast data is requested from The Weather Company. Choose the smallest duration that covers the cards or automations you plan to use.",
+          "update_interval_minutes": "Controls how often Home Assistant refreshes Weather Company data. Use a longer interval if you are watching API quota usage."
         }
       }
     }

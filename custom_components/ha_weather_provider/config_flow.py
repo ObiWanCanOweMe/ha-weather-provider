@@ -44,6 +44,12 @@ def _validate_coordinates(latitude: float, longitude: float) -> bool:
 
 def _flow_options_from_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Return setup options from user input with defaults applied."""
+    update_interval = int(
+        user_input.get(
+            CONF_UPDATE_INTERVAL_MINUTES,
+            DEFAULT_UPDATE_INTERVAL_MINUTES,
+        )
+    )
     return {
         CONF_DAILY_FORECAST_DURATION: user_input.get(
             CONF_DAILY_FORECAST_DURATION,
@@ -60,10 +66,7 @@ def _flow_options_from_input(user_input: dict[str, Any]) -> dict[str, Any]:
             CONF_HOURLY_FORECAST_DURATION,
             DEFAULT_HOURLY_FORECAST_DURATION,
         ),
-        CONF_UPDATE_INTERVAL_MINUTES: user_input.get(
-            CONF_UPDATE_INTERVAL_MINUTES,
-            DEFAULT_UPDATE_INTERVAL_MINUTES,
-        ),
+        CONF_UPDATE_INTERVAL_MINUTES: update_interval,
     }
 
 
@@ -91,7 +94,7 @@ def _setup_schema() -> vol.Schema:
             vol.Optional(
                 CONF_UPDATE_INTERVAL_MINUTES,
                 default=DEFAULT_UPDATE_INTERVAL_MINUTES,
-            ): vol.In(UPDATE_INTERVAL_MINUTES),
+            ): vol.All(vol.Coerce(int), vol.In(UPDATE_INTERVAL_MINUTES)),
         }
     )
 
@@ -136,7 +139,7 @@ def _options_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
                     CONF_UPDATE_INTERVAL_MINUTES,
                     DEFAULT_UPDATE_INTERVAL_MINUTES,
                 ),
-            ): vol.In(UPDATE_INTERVAL_MINUTES),
+            ): vol.All(vol.Coerce(int), vol.In(UPDATE_INTERVAL_MINUTES)),
         }
     )
 
