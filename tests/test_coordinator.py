@@ -112,6 +112,25 @@ async def test_coordinator_keeps_weather_data_when_optional_pollen_unavailable(
 
 
 @pytest.mark.asyncio
+async def test_coordinator_raises_update_failed_when_optional_pollen_forecast_request_fails(
+    hass,
+) -> None:
+    """Optional pollen forecast request failures should fail refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_pollen_forecast.side_effect = TWCRequestError(
+        "temporary pollen forecast failure"
+    )
+    coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "error",
     [

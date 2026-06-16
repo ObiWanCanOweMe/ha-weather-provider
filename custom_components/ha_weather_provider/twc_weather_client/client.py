@@ -39,7 +39,6 @@ __all__ = [
     "POLLEN_OBSERVATION_PATH",
     "TROPICAL_CURRENT_POSITION_PATH",
     "TWCClient",
-    "is_optional_endpoint_unavailable",
 ]
 
 BASE_URL = "https://api.weather.com"
@@ -57,11 +56,6 @@ AIR_QUALITY_PATH = "/v3/wx/globalAirQuality"
 DAILY_FORECAST_PATH = f"{DAILY_FORECAST_PATH_PREFIX}/{DEFAULT_DAILY_FORECAST_DURATION}"
 HOURLY_FORECAST_PATH = f"{HOURLY_FORECAST_PATH_PREFIX}/{DEFAULT_HOURLY_FORECAST_DURATION}"
 POLLEN_FORECAST_PATH = f"{POLLEN_FORECAST_PATH_PREFIX}/{DEFAULT_POLLEN_FORECAST_DURATION}"
-
-
-def is_optional_endpoint_unavailable(error: Exception) -> bool:
-    """Return whether an optional endpoint failure should be treated as unavailable."""
-    return isinstance(error, (TWCAuthError, TWCNoDataError, TWCPermissionError))
 
 
 class TWCClient:
