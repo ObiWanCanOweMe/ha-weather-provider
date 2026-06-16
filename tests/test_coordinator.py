@@ -9,7 +9,7 @@ import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from custom_components.ha_weather_provider.api import (
+from custom_components.ha_weather_provider.twc_weather_client import (
     TWCAuthError,
     TWCNoDataError,
     TWCPermissionError,

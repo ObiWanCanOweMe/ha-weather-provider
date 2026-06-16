@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Any
 
 from homeassistant.components.weather import Forecast, WeatherEntity, WeatherEntityFeature
@@ -19,57 +18,18 @@ from .const import (
     UNIT_SYSTEMS,
 )
 from .coordinator import TWCWeatherCoordinator
+from .twc_weather_client.normalizers import (
+    alert_summaries as _alert_summaries,
+    condition_from_twc as _condition,
+    first_daypart_value as _first_daypart_value,
+    first_non_null as _first_non_null,
+    forecast_datetime as _forecast_datetime,
+    series_item as _series_item,
+    series_value as _series_value,
+    series_values as _series_values,
+    value as _value,
+)
 
-CONDITION_BY_ICON = {
-    0: "exceptional",
-    1: "exceptional",
-    2: "exceptional",
-    3: "lightning-rainy",
-    4: "lightning-rainy",
-    5: "snowy-rainy",
-    6: "snowy-rainy",
-    7: "snowy-rainy",
-    8: "snowy-rainy",
-    9: "rainy",
-    10: "snowy-rainy",
-    11: "rainy",
-    12: "rainy",
-    13: "snowy",
-    14: "snowy",
-    15: "snowy",
-    16: "snowy",
-    17: "hail",
-    18: "snowy-rainy",
-    19: "fog",
-    20: "fog",
-    21: "fog",
-    22: "fog",
-    23: "windy",
-    24: "windy",
-    25: "exceptional",
-    26: "cloudy",
-    27: "partlycloudy",
-    28: "partlycloudy",
-    29: "partlycloudy",
-    30: "partlycloudy",
-    31: "clear-night",
-    32: "sunny",
-    33: "clear-night",
-    34: "sunny",
-    35: "hail",
-    36: "sunny",
-    37: "lightning",
-    38: "lightning",
-    39: "rainy",
-    40: "rainy",
-    41: "snowy",
-    42: "snowy",
-    43: "snowy",
-    44: "partlycloudy",
-    45: "lightning-rainy",
-    46: "snowy",
-    47: "lightning-rainy",
-}
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
@@ -77,58 +37,6 @@ async def async_setup_entry(
     """Set up the weather entity from a config entry."""
     coordinator: TWCWeatherCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([HAWeatherProviderEntity(coordinator, entry)])
-
-
-def _value(data: dict[str, Any], key: str) -> Any:
-    """Return a non-null value from a TWC payload."""
-    value = data.get(key)
-    return None if value == "" else value
-
-
-def _condition(
-    icon_code: Any, phrase: str | None = None, *, daytime: bool | None = None
-) -> str | None:
-    """Map TWC icon code or phrase to a Home Assistant condition."""
-    if isinstance(icon_code, int) and icon_code in CONDITION_BY_ICON:
-        return CONDITION_BY_ICON[icon_code]
-
-    phrase = (phrase or "").lower()
-    if "thunder" in phrase:
-        return "lightning-rainy" if "rain" in phrase else "lightning"
-    if "snow" in phrase:
-        return "snowy-rainy" if "rain" in phrase else "snowy"
-    if "rain" in phrase or "shower" in phrase:
-        return "rainy"
-    if "fog" in phrase or "mist" in phrase:
-        return "fog"
-    if "cloud" in phrase:
-        return "partlycloudy" if "partly" in phrase or "mostly" in phrase else "cloudy"
-    if "clear" in phrase:
-        if daytime is True:
-            return "sunny"
-        return "clear-night"
-    if "sun" in phrase:
-        return "sunny"
-    return None
-
-
-def _first_daypart_value(daypart: Any, key: str, index: int) -> Any:
-    """Return the first daytime value for a daily forecast index."""
-    if not isinstance(daypart, dict):
-        return None
-    values = daypart.get(key)
-    if not isinstance(values, list) or not values:
-        return None
-    series = values[0] if len(values) == 1 and isinstance(values[0], list) else values
-    if not isinstance(series, list) or not series:
-        return None
-    offset = index * 2 + (1 if series[0] is None else 0)
-    if offset >= len(series):
-        return None
-    value = series[offset]
-    if isinstance(value, list):
-        return next((item for item in value if item is not None), None)
-    return value
 
 
 def _forecast_high(daily_forecast: dict[str, Any], index: int) -> Any:
@@ -139,69 +47,6 @@ def _forecast_high(daily_forecast: dict[str, Any], index: int) -> Any:
         return high
     calendar_highs = _series_values(daily_forecast.get("calendarDayTemperatureMax"))
     return _series_item(calendar_highs, index)
-
-
-def _forecast_datetime(valid_time: Any) -> str | None:
-    """Convert a TWC epoch to an ISO timestamp, or skip invalid values."""
-    if not isinstance(valid_time, (int, float)):
-        return None
-    try:
-        return datetime.fromtimestamp(valid_time, UTC).isoformat()
-    except (OverflowError, OSError, ValueError):
-        return None
-
-
-def _series_values(value: Any) -> list[Any]:
-    """Return a list-like forecast series, or an empty list for malformed input."""
-    return value if isinstance(value, list) else []
-
-
-def _series_item(series: list[Any], index: int) -> Any:
-    """Return a numeric item from a forecast series, or None for malformed values."""
-    if index >= len(series):
-        return None
-    value = series[index]
-    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
-
-
-def _series_value(data: dict[str, Any], key: str, index: int) -> Any:
-    """Return one non-empty forecast series value by index."""
-    series = _series_values(data.get(key))
-    if index >= len(series):
-        return None
-    value = series[index]
-    return None if value == "" else value
-
-
-def _first_non_null(*values: Any) -> Any:
-    """Return the first non-null, non-empty value."""
-    return next((value for value in values if value is not None and value != ""), None)
-
-
-def _alert_summaries(data: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return stable alert headline summaries from a TWC alert payload."""
-    alerts = data.get("alerts")
-    if not isinstance(alerts, list):
-        return []
-
-    summaries: list[dict[str, Any]] = []
-    for alert in alerts:
-        if not isinstance(alert, dict):
-            continue
-        summaries.append(
-            {
-                "detail_key": _value(alert, "detailKey"),
-                "event": _value(alert, "eventDescription"),
-                "headline": _value(alert, "headlineText"),
-                "severity": _value(alert, "severity"),
-                "severity_code": _value(alert, "severityCode"),
-                "urgency": _value(alert, "urgency"),
-                "certainty": _value(alert, "certainty"),
-                "expires": _value(alert, "expireTimeLocal"),
-                "source": _value(alert, "source"),
-            }
-        )
-    return summaries
 
 
 class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherEntity):

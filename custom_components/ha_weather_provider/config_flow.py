@@ -9,7 +9,6 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 from .const import (
     CONF_API_KEY,
     CONF_DAILY_FORECAST_DURATION,
@@ -35,6 +34,7 @@ from .const import (
     TWC_UNITS,
     UPDATE_INTERVAL_MINUTES,
 )
+from .twc_weather_client import TWCAuthError, TWCClient, TWCError, TWCPermissionError
 
 
 def _validate_coordinates(latitude: float, longitude: float) -> bool:

@@ -1,0 +1,192 @@
+"""Reusable normalizers for The Weather Company payloads."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
+
+CONDITION_BY_ICON = {
+    0: "exceptional",
+    1: "exceptional",
+    2: "exceptional",
+    3: "lightning-rainy",
+    4: "lightning-rainy",
+    5: "snowy-rainy",
+    6: "snowy-rainy",
+    7: "snowy-rainy",
+    8: "snowy-rainy",
+    9: "rainy",
+    10: "snowy-rainy",
+    11: "rainy",
+    12: "rainy",
+    13: "snowy",
+    14: "snowy",
+    15: "snowy",
+    16: "snowy",
+    17: "hail",
+    18: "snowy-rainy",
+    19: "fog",
+    20: "fog",
+    21: "fog",
+    22: "fog",
+    23: "windy",
+    24: "windy",
+    25: "exceptional",
+    26: "cloudy",
+    27: "partlycloudy",
+    28: "partlycloudy",
+    29: "partlycloudy",
+    30: "partlycloudy",
+    31: "clear-night",
+    32: "sunny",
+    33: "clear-night",
+    34: "sunny",
+    35: "hail",
+    36: "sunny",
+    37: "lightning",
+    38: "lightning",
+    39: "rainy",
+    40: "rainy",
+    41: "snowy",
+    42: "snowy",
+    43: "snowy",
+    44: "partlycloudy",
+    45: "lightning-rainy",
+    46: "snowy",
+    47: "lightning-rainy",
+}
+
+__all__ = [
+    "CONDITION_BY_ICON",
+    "alert_summaries",
+    "condition_from_twc",
+    "first_daypart_value",
+    "first_non_null",
+    "forecast_datetime",
+    "series_item",
+    "series_value",
+    "series_values",
+    "value",
+]
+
+
+def value(data: dict[str, Any], key: str) -> Any:
+    """Return a non-null value from a TWC payload."""
+    payload_value = data.get(key)
+    return None if payload_value == "" else payload_value
+
+
+def condition_from_twc(
+    icon_code: Any, phrase: str | None = None, *, daytime: bool | None = None
+) -> str | None:
+    """Map TWC icon code or phrase to a Home Assistant condition."""
+    if isinstance(icon_code, int) and icon_code in CONDITION_BY_ICON:
+        return CONDITION_BY_ICON[icon_code]
+
+    phrase = (phrase or "").lower()
+    if "thunder" in phrase:
+        return "lightning-rainy" if "rain" in phrase else "lightning"
+    if "snow" in phrase:
+        return "snowy-rainy" if "rain" in phrase else "snowy"
+    if "rain" in phrase or "shower" in phrase:
+        return "rainy"
+    if "fog" in phrase or "mist" in phrase:
+        return "fog"
+    if "cloud" in phrase:
+        return "partlycloudy" if "partly" in phrase or "mostly" in phrase else "cloudy"
+    if "clear" in phrase:
+        if daytime is True:
+            return "sunny"
+        return "clear-night"
+    if "sun" in phrase:
+        return "sunny"
+    return None
+
+
+def first_daypart_value(daypart: Any, key: str, index: int) -> Any:
+    """Return the first daytime value for a daily forecast index."""
+    if not isinstance(daypart, dict):
+        return None
+    values = daypart.get(key)
+    if not isinstance(values, list) or not values:
+        return None
+    series = values[0] if len(values) == 1 and isinstance(values[0], list) else values
+    if not isinstance(series, list) or not series:
+        return None
+    offset = index * 2 + (1 if series[0] is None else 0)
+    if offset >= len(series):
+        return None
+    payload_value = series[offset]
+    if isinstance(payload_value, list):
+        return next((item for item in payload_value if item is not None), None)
+    return payload_value
+
+
+def forecast_datetime(valid_time: Any) -> str | None:
+    """Convert a TWC epoch to an ISO timestamp, or skip invalid values."""
+    if not isinstance(valid_time, (int, float)):
+        return None
+    try:
+        return datetime.fromtimestamp(valid_time, UTC).isoformat()
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def series_values(value: Any) -> list[Any]:
+    """Return a list-like forecast series, or an empty list for malformed input."""
+    return value if isinstance(value, list) else []
+
+
+def series_item(series: list[Any], index: int) -> Any:
+    """Return a numeric item from a forecast series, or None for malformed values."""
+    if index >= len(series):
+        return None
+    payload_value = series[index]
+    return (
+        payload_value
+        if isinstance(payload_value, (int, float)) and not isinstance(payload_value, bool)
+        else None
+    )
+
+
+def series_value(data: dict[str, Any], key: str, index: int) -> Any:
+    """Return one non-empty forecast series value by index."""
+    series = series_values(data.get(key))
+    if index >= len(series):
+        return None
+    payload_value = series[index]
+    return None if payload_value == "" else payload_value
+
+
+def first_non_null(*values: Any) -> Any:
+    """Return the first non-null, non-empty value."""
+    return next(
+        (payload_value for payload_value in values if payload_value is not None and payload_value != ""),
+        None,
+    )
+
+
+def alert_summaries(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return stable alert headline summaries from a TWC alert payload."""
+    alerts = data.get("alerts")
+    if not isinstance(alerts, list):
+        return []
+
+    summaries: list[dict[str, Any]] = []
+    for alert in alerts:
+        if not isinstance(alert, dict):
+            continue
+        summaries.append(
+            {
+                "detail_key": value(alert, "detailKey"),
+                "event": value(alert, "eventDescription"),
+                "headline": value(alert, "headlineText"),
+                "severity": value(alert, "severity"),
+                "severity_code": value(alert, "severityCode"),
+                "urgency": value(alert, "urgency"),
+                "certainty": value(alert, "certainty"),
+                "expires": value(alert, "expireTimeLocal"),
+                "source": value(alert, "source"),
+            }
+        )
+    return summaries

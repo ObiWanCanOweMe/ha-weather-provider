@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract TWC API access and reusable payload normalization out of the Home Assistant integration and into a small Python package inside this repo.
+**Goal:** Extract TWC API access and reusable payload normalization out of the Home Assistant integration modules and into a small client package shipped inside the integration for now.
 
-**Architecture:** Create a `twc_weather_client` package outside `custom_components` and move request execution, TWC exceptions, endpoint construction, and shared parsing helpers into it. Keep Home Assistant modules responsible for config entries, coordinators, entity classes, HA units, entity descriptions, and dashboard docs.
+**Architecture:** Create `custom_components/ha_weather_provider/twc_weather_client/` and move request execution, TWC exceptions, endpoint construction, and shared parsing helpers into it. This is a shippable integration subpackage until a separately published client distribution exists. Keep Home Assistant modules responsible for config entries, coordinators, entity classes, HA units, entity descriptions, and dashboard docs.
 
 **Tech Stack:** Python 3.14, aiohttp, Home Assistant custom integration APIs, pytest, pytest-homeassistant-custom-component, aioresponses, ruff, obi-dev-harness.
 
@@ -13,8 +13,8 @@
 ### Task 1: Add Client Package Errors
 
 **Files:**
-- Create: `twc_weather_client/__init__.py`
-- Create: `twc_weather_client/errors.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/errors.py`
 - Modify: `custom_components/ha_weather_provider/api.py`
 - Test: `tests/test_twc_client_errors.py`
 
@@ -23,9 +23,9 @@
 Create `tests/test_twc_client_errors.py`:
 
 ```python
-"""Tests for the standalone TWC client package exports."""
+"""Tests for the integration TWC client package exports."""
 
-from twc_weather_client import (
+from custom_components.ha_weather_provider.twc_weather_client import (
     TWCAuthError,
     TWCError,
     TWCNoDataError,
@@ -35,7 +35,7 @@ from twc_weather_client import (
 
 
 def test_twc_client_exports_errors() -> None:
-    """The standalone package exposes all public TWC exceptions."""
+    """The integration package exposes all public TWC exceptions."""
     assert issubclass(TWCAuthError, TWCError)
     assert issubclass(TWCNoDataError, TWCError)
     assert issubclass(TWCPermissionError, TWCError)
@@ -46,11 +46,11 @@ def test_twc_client_exports_errors() -> None:
 
 Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_twc_client_errors.py -q`
 
-Expected: FAIL with `ModuleNotFoundError: No module named 'twc_weather_client'`.
+Expected: FAIL with `ModuleNotFoundError` for the integration client subpackage.
 
 - [ ] **Step 3: Add package error classes**
 
-Create `twc_weather_client/errors.py`:
+Create `custom_components/ha_weather_provider/twc_weather_client/errors.py`:
 
 ```python
 """Errors raised by the The Weather Company client package."""
@@ -78,7 +78,7 @@ class TWCRequestError(TWCError):
     """TWC request failed."""
 ```
 
-Create `twc_weather_client/__init__.py`:
+Create `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
 
 ```python
 """The Weather Company async client and payload helpers."""
@@ -105,7 +105,7 @@ __all__ = [
 Update `custom_components/ha_weather_provider/api.py` to import these errors instead of defining them locally:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCError,
     TWCNoDataError,
@@ -125,16 +125,18 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add twc_weather_client/__init__.py twc_weather_client/errors.py custom_components/ha_weather_provider/api.py tests/test_twc_client_errors.py
+git add custom_components/ha_weather_provider/twc_weather_client/__init__.py custom_components/ha_weather_provider/twc_weather_client/errors.py custom_components/ha_weather_provider/api.py tests/test_twc_client_errors.py
 git commit -m "Extract TWC client errors"
 ```
 
 ### Task 2: Move Request Client Into Package
 
 **Files:**
-- Create: `twc_weather_client/client.py`
-- Modify: `twc_weather_client/__init__.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/client.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/defaults.py`
+- Modify: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
 - Modify: `custom_components/ha_weather_provider/api.py`
+- Modify: `custom_components/ha_weather_provider/const.py`
 - Modify: `tests/test_api.py`
 - Test: `tests/test_twc_client.py`
 
@@ -143,7 +145,7 @@ git commit -m "Extract TWC client errors"
 Create `tests/test_twc_client.py` by moving the API-client-only tests from `tests/test_api.py` into the new file. The first moved tests should cover current conditions and status mapping:
 
 ```python
-"""Tests for the standalone TWC async client."""
+"""Tests for the integration TWC async client."""
 
 from __future__ import annotations
 
@@ -151,14 +153,17 @@ import aiohttp
 import pytest
 from aioresponses import aioresponses
 
-from twc_weather_client import (
+from custom_components.ha_weather_provider.twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCNoDataError,
     TWCPermissionError,
     TWCRequestError,
 )
-from twc_weather_client.client import BASE_URL, CURRENT_PATH
+from custom_components.ha_weather_provider.twc_weather_client.client import (
+    BASE_URL,
+    CURRENT_PATH,
+)
 
 
 def _client(session: aiohttp.ClientSession) -> TWCClient:
@@ -223,11 +228,11 @@ Leave integration-specific tests in `tests/test_api.py` temporarily. They will c
 
 Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_twc_client.py -q`
 
-Expected: FAIL with `ImportError` for `TWCClient` or `twc_weather_client.client`.
+Expected: FAIL with `ImportError` for `TWCClient` or the integration client module.
 
 - [ ] **Step 3: Move the client implementation**
 
-Create `twc_weather_client/client.py` by moving the current `TWCClient` implementation from `custom_components/ha_weather_provider/api.py`. Keep the method names and behavior unchanged.
+Create `custom_components/ha_weather_provider/twc_weather_client/client.py` by moving the current `TWCClient` implementation from `custom_components/ha_weather_provider/api.py`. Keep the method names and behavior unchanged.
 
 Use this module header and imports:
 
@@ -242,6 +247,12 @@ from typing import Any
 import aiohttp
 from aiohttp import ClientSession
 
+from .defaults import (
+    DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
+)
 from .errors import (
     TWCAuthError,
     TWCNoDataError,
@@ -258,10 +269,6 @@ POLLEN_FORECAST_PATH_PREFIX = "/v2/indices/pollen/daypart"
 POLLEN_OBSERVATION_PATH = "/v1/geocode/{latitude}/{longitude}/observations/pollen.json"
 TROPICAL_CURRENT_POSITION_PATH = "/v2/tropical/currentposition"
 AIR_QUALITY_PATH = "/v3/wx/globalAirQuality"
-DEFAULT_DAILY_FORECAST_DURATION = "7day"
-DEFAULT_HOURLY_FORECAST_DURATION = "2day"
-DEFAULT_POLLEN_FORECAST_DURATION = "3day"
-DEFAULT_AIR_QUALITY_SCALE = "EPA"
 ```
 
 The constructor signature must remain:
@@ -282,10 +289,11 @@ def __init__(
 ```
 
 Keep `_async_get_json` and `_raise_for_status` behavior byte-for-byte equivalent except for imports.
+Add `custom_components/ha_weather_provider/twc_weather_client/defaults.py` for the shared default values and import those names from `custom_components/ha_weather_provider/const.py` instead of copying the strings there.
 
 - [ ] **Step 4: Export the client from the package**
 
-Update `twc_weather_client/__init__.py`:
+Update `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
 
 ```python
 """The Weather Company async client and payload helpers."""
@@ -293,6 +301,12 @@ Update `twc_weather_client/__init__.py`:
 from __future__ import annotations
 
 from .client import TWCClient
+from .defaults import (
+    DEFAULT_AIR_QUALITY_SCALE,
+    DEFAULT_DAILY_FORECAST_DURATION,
+    DEFAULT_HOURLY_FORECAST_DURATION,
+    DEFAULT_POLLEN_FORECAST_DURATION,
+)
 from .errors import (
     TWCAuthError,
     TWCError,
@@ -302,6 +316,10 @@ from .errors import (
 )
 
 __all__ = [
+    "DEFAULT_AIR_QUALITY_SCALE",
+    "DEFAULT_DAILY_FORECAST_DURATION",
+    "DEFAULT_HOURLY_FORECAST_DURATION",
+    "DEFAULT_POLLEN_FORECAST_DURATION",
     "TWCAuthError",
     "TWCClient",
     "TWCError",
@@ -316,11 +334,11 @@ __all__ = [
 Replace `custom_components/ha_weather_provider/api.py` with:
 
 ```python
-"""Compatibility imports for the standalone TWC client package."""
+"""Compatibility imports for the integration TWC client package."""
 
 from __future__ import annotations
 
-from twc_weather_client import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -348,15 +366,21 @@ Expected: PASS.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add twc_weather_client/__init__.py twc_weather_client/client.py custom_components/ha_weather_provider/api.py tests/test_twc_client.py tests/test_api.py
+git add custom_components/ha_weather_provider/twc_weather_client/__init__.py custom_components/ha_weather_provider/twc_weather_client/client.py custom_components/ha_weather_provider/api.py tests/test_twc_client.py tests/test_api.py
 git commit -m "Move TWC request client into package"
 ```
+
+**Review follow-up:** Keep the parent integration package lazy at import time so
+`PYTHONPATH=custom_components python -c "import ha_weather_provider.twc_weather_client.defaults"`
+does not import Home Assistant. `tests/test_twc_client.py` includes a subprocess
+regression that injects `sys.modules["homeassistant"] = None` before importing
+the client defaults module.
 
 ### Task 3: Move Shared Normalizer Helpers
 
 **Files:**
-- Create: `twc_weather_client/normalizers.py`
-- Modify: `twc_weather_client/__init__.py`
+- Create: `custom_components/ha_weather_provider/twc_weather_client/normalizers.py`
+- Modify: `custom_components/ha_weather_provider/twc_weather_client/__init__.py`
 - Modify: `custom_components/ha_weather_provider/weather.py`
 - Modify: `custom_components/ha_weather_provider/sensor.py`
 - Test: `tests/test_twc_normalizers.py`
@@ -372,7 +396,7 @@ Create `tests/test_twc_normalizers.py`:
 
 from __future__ import annotations
 
-from twc_weather_client.normalizers import (
+from custom_components.ha_weather_provider.twc_weather_client.normalizers import (
     alert_summaries,
     condition_from_twc,
     first_daypart_value,
@@ -453,11 +477,11 @@ def test_alert_summaries_returns_stable_shape() -> None:
 
 Run: `PYTHONPATH=. .worktrees/demo-dashboard-card/.venv/bin/pytest tests/test_twc_normalizers.py -q`
 
-Expected: FAIL with `ModuleNotFoundError` for `twc_weather_client.normalizers`.
+Expected: FAIL with `ModuleNotFoundError` for the integration normalizers module.
 
 - [ ] **Step 3: Add reusable normalizers**
 
-Create `twc_weather_client/normalizers.py` by moving these helpers from `weather.py`:
+Create `custom_components/ha_weather_provider/twc_weather_client/normalizers.py` by moving these helpers from `weather.py`:
 
 ```python
 """Reusable payload normalizers for The Weather Company responses."""
@@ -640,7 +664,13 @@ def alert_summaries(data: dict[str, Any]) -> list[dict[str, Any]]:
 
 - [ ] **Step 4: Export normalizers from the package**
 
-Update `twc_weather_client/__init__.py`:
+Update `custom_components/ha_weather_provider/twc_weather_client/__init__.py`:
+
+Keep this package import dependency-light: do not eagerly import `.client` from
+`__init__.py`. Normalizer submodule imports must work with only
+`custom_components` on `PYTHONPATH` and without `aiohttp` or Home Assistant
+installed. If package-level `TWCClient` ergonomics are needed, expose it through
+lazy `__getattr__`.
 
 ```python
 from .normalizers import (
@@ -675,7 +705,7 @@ Add these names to `__all__`:
 Modify `custom_components/ha_weather_provider/weather.py`:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     alert_summaries as _alert_summaries,
     condition_from_twc as _condition,
     first_daypart_value as _first_daypart_value,
@@ -708,7 +738,7 @@ Keep `_forecast_high` in `weather.py` because it is specific to HA forecast dict
 Modify `custom_components/ha_weather_provider/sensor.py`:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     condition_from_twc as _condition,
     first_daypart_value as _first_daypart_value,
     series_value as _series_value,
@@ -730,7 +760,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add twc_weather_client/__init__.py twc_weather_client/normalizers.py custom_components/ha_weather_provider/weather.py custom_components/ha_weather_provider/sensor.py tests/test_twc_normalizers.py tests/test_weather.py tests/test_sensor.py
+git add custom_components/ha_weather_provider/twc_weather_client/__init__.py custom_components/ha_weather_provider/twc_weather_client/normalizers.py custom_components/ha_weather_provider/weather.py custom_components/ha_weather_provider/sensor.py tests/test_twc_normalizers.py tests/test_weather.py tests/test_sensor.py
 git commit -m "Extract TWC payload normalizers"
 ```
 
@@ -747,7 +777,7 @@ git commit -m "Extract TWC payload normalizers"
 Modify `custom_components/ha_weather_provider/coordinator.py`:
 
 ```python
-from twc_weather_client import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCError,
@@ -759,7 +789,7 @@ from twc_weather_client import (
 Modify `custom_components/ha_weather_provider/__init__.py`:
 
 ```python
-from twc_weather_client import TWCAuthError, TWCClient, TWCPermissionError
+from .twc_weather_client import TWCAuthError, TWCClient, TWCPermissionError
 ```
 
 Remove imports from `.api` in both files.
@@ -788,14 +818,14 @@ If `api.py` was deleted:
 
 ```bash
 git add custom_components/ha_weather_provider/__init__.py custom_components/ha_weather_provider/coordinator.py custom_components/ha_weather_provider/api.py tests/test_twc_client.py tests/test_api.py tests/test_init.py tests/test_coordinator.py
-git commit -m "Use standalone TWC client in HA integration"
+git commit -m "Use integration TWC client in HA integration"
 ```
 
 If `api.py` remains as a shim because tests or external imports still need it:
 
 ```bash
 git add custom_components/ha_weather_provider/__init__.py custom_components/ha_weather_provider/coordinator.py custom_components/ha_weather_provider/api.py tests/test_twc_client.py tests/test_api.py tests/test_init.py tests/test_coordinator.py
-git commit -m "Use standalone TWC client in HA integration"
+git commit -m "Use integration TWC client in HA integration"
 ```
 
 ### Task 5: Final Verification
@@ -805,7 +835,7 @@ git commit -m "Use standalone TWC client in HA integration"
 
 - [ ] **Step 1: Run Ruff**
 
-Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check twc_weather_client custom_components/ha_weather_provider tests`
+Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check custom_components/ha_weather_provider/twc_weather_client custom_components/ha_weather_provider tests`
 
 Expected: PASS.
 
@@ -820,7 +850,7 @@ Expected: compile, JSON validation, Ruff/harness checks, and pytest all pass.
 If verification required fixes:
 
 ```bash
-git add twc_weather_client custom_components/ha_weather_provider tests
+git add custom_components/ha_weather_provider/twc_weather_client custom_components/ha_weather_provider tests
 git commit -m "Stabilize TWC client package extraction"
 ```
 
