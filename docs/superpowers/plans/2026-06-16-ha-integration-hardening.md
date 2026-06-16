@@ -718,7 +718,7 @@ Expected: PASS.
 
 - [ ] **Step 2: Run Ruff**
 
-Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check twc_weather_client custom_components/ha_weather_provider tests`
+Run: `.worktrees/demo-dashboard-card/.venv/bin/ruff check custom_components/ha_weather_provider tests`
 
 Expected: PASS.
 
@@ -733,7 +733,7 @@ Expected: compile, JSON validation, Ruff/harness checks, and pytest all pass.
 If verification required fixes:
 
 ```bash
-git add twc_weather_client custom_components/ha_weather_provider docs tests .gitignore
+git add custom_components/ha_weather_provider docs tests .gitignore hacs.json scripts/develop
 git commit -m "Stabilize HA integration hardening"
 ```
 
