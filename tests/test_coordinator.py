@@ -118,7 +118,6 @@ async def test_coordinator_keeps_weather_data_when_optional_pollen_unavailable(
         TWCNoDataError("empty"),
         TWCAuthError("bad key for optional endpoint"),
         TWCPermissionError("no access"),
-        TWCRequestError("temporary pollen observation failure"),
     ],
 )
 async def test_coordinator_keeps_weather_data_when_optional_pollen_observation_unavailable(
@@ -143,6 +142,28 @@ async def test_coordinator_keeps_weather_data_when_optional_pollen_observation_u
         "pollenForecast12hour": {"grassPollenIndex": [1]}
     }
     assert data.pollen_observation == {}
+
+
+@pytest.mark.asyncio
+async def test_coordinator_raises_update_failed_when_optional_pollen_observation_request_fails(
+    hass,
+) -> None:
+    """Optional pollen observation request failures should fail refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_pollen_forecast.return_value = {
+        "pollenForecast12hour": {"grassPollenIndex": [1]}
+    }
+    client.async_get_pollen_observation.side_effect = TWCRequestError(
+        "temporary pollen observation failure"
+    )
+    coordinator = TWCWeatherCoordinator(hass, client, pollen_enabled=True)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
 
 
 @pytest.mark.asyncio
@@ -192,7 +213,6 @@ async def test_coordinator_fetches_air_quality_when_enabled(hass) -> None:
         TWCNoDataError("empty"),
         TWCAuthError("bad key for optional endpoint"),
         TWCPermissionError("no access"),
-        TWCRequestError("temporary tropical failure"),
     ],
 )
 async def test_coordinator_keeps_weather_data_when_optional_tropical_unavailable(
@@ -214,13 +234,31 @@ async def test_coordinator_keeps_weather_data_when_optional_tropical_unavailable
 
 
 @pytest.mark.asyncio
+async def test_coordinator_raises_update_failed_when_optional_tropical_request_fails(
+    hass,
+) -> None:
+    """Optional tropical request failures should fail weather refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_tropical_current_position.side_effect = TWCRequestError(
+        "temporary tropical failure"
+    )
+    coordinator = TWCWeatherCoordinator(hass, client, tropical_enabled=True)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "error",
     [
         TWCNoDataError("empty"),
         TWCAuthError("bad key for optional endpoint"),
         TWCPermissionError("no access"),
-        TWCRequestError("temporary air quality failure"),
     ],
 )
 async def test_coordinator_keeps_weather_data_when_optional_air_quality_unavailable(
@@ -239,6 +277,25 @@ async def test_coordinator_keeps_weather_data_when_optional_air_quality_unavaila
 
     assert data.current == {"temperature": 72}
     assert data.air_quality == {}
+
+
+@pytest.mark.asyncio
+async def test_coordinator_raises_update_failed_when_optional_air_quality_request_fails(
+    hass,
+) -> None:
+    """Optional air quality request failures should fail weather refresh."""
+    client = AsyncMock()
+    client.async_get_current_conditions.return_value = {"temperature": 72}
+    client.async_get_daily_forecast.return_value = {"temperatureMax": [75]}
+    client.async_get_hourly_forecast.return_value = {"temperature": [72, 71]}
+    client.async_get_alert_headlines.return_value = {"alerts": []}
+    client.async_get_air_quality.side_effect = TWCRequestError(
+        "temporary air quality failure"
+    )
+    coordinator = TWCWeatherCoordinator(hass, client, air_quality_enabled=True)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator._async_update_data()
 
 
 def test_coordinator_uses_configured_update_interval(hass) -> None:

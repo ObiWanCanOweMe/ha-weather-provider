@@ -19,7 +19,6 @@ from .twc_weather_client import (
     TWCClient,
     TWCError,
     TWCPermissionError,
-    TWCRequestError,
     is_optional_endpoint_unavailable,
 )
 from .const import DEFAULT_UPDATE_INTERVAL, DOMAIN
@@ -93,9 +92,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
             try:
                 pollen_observation = await self.client.async_get_pollen_observation()
             except TWCError as err:
-                if is_optional_endpoint_unavailable(err) or isinstance(
-                    err, TWCRequestError
-                ):
+                if is_optional_endpoint_unavailable(err):
                     _LOGGER.debug(
                         "Optional TWC pollen observation endpoint is unavailable"
                     )
@@ -109,9 +106,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
                     await self.client.async_get_tropical_current_position()
                 )
             except TWCError as err:
-                if is_optional_endpoint_unavailable(err) or isinstance(
-                    err, TWCRequestError
-                ):
+                if is_optional_endpoint_unavailable(err):
                     _LOGGER.debug(
                         "Optional TWC tropical current-position endpoint is unavailable"
                     )
@@ -123,9 +118,7 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
             try:
                 air_quality = await self.client.async_get_air_quality()
             except TWCError as err:
-                if is_optional_endpoint_unavailable(err) or isinstance(
-                    err, TWCRequestError
-                ):
+                if is_optional_endpoint_unavailable(err):
                     _LOGGER.debug("Optional TWC air quality endpoint is unavailable")
                 else:
                     raise UpdateFailed(str(err)) from err
