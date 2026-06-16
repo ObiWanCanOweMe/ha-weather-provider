@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .api import (
+from .twc_weather_client import (
     TWCAuthError,
     TWCClient,
     TWCError,
