@@ -9,11 +9,13 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
+    CONF_CURRENT_DETAIL_SENSORS,
     CONF_DAILY_FORECAST_DURATION,
     CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
+    CONF_FORECAST_ADAPTER_SENSORS,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
@@ -54,10 +56,12 @@ async def test_form_creates_entry(hass):
     assert result["data"][CONF_LANGUAGE] == "en-US"
     assert result["options"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_CURRENT_DETAIL_SENSORS: False,
         CONF_ENABLE_AIR_QUALITY: False,
         CONF_ENABLE_POLLEN: False,
         CONF_ENABLE_TROPICAL_WEATHER: False,
         CONF_EXTRA_ENTITIES: False,
+        CONF_FORECAST_ADAPTER_SENSORS: False,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 30,
     }
@@ -88,10 +92,11 @@ async def test_form_creates_entry_with_install_options(hass):
                 CONF_UNITS: "e",
                 CONF_LANGUAGE: "en-US",
                 CONF_DAILY_FORECAST_DURATION: "15day",
+                CONF_CURRENT_DETAIL_SENSORS: True,
                 CONF_ENABLE_AIR_QUALITY: True,
                 CONF_ENABLE_POLLEN: True,
                 CONF_ENABLE_TROPICAL_WEATHER: True,
-                CONF_EXTRA_ENTITIES: True,
+                CONF_FORECAST_ADAPTER_SENSORS: True,
                 CONF_HOURLY_FORECAST_DURATION: "6hour",
                 CONF_UPDATE_INTERVAL_MINUTES: "15",
             },
@@ -100,10 +105,12 @@ async def test_form_creates_entry_with_install_options(hass):
     assert result["type"] == "create_entry"
     assert result["options"] == {
         CONF_DAILY_FORECAST_DURATION: "15day",
+        CONF_CURRENT_DETAIL_SENSORS: True,
         CONF_ENABLE_AIR_QUALITY: True,
         CONF_ENABLE_POLLEN: True,
         CONF_ENABLE_TROPICAL_WEATHER: True,
-        CONF_EXTRA_ENTITIES: True,
+        CONF_EXTRA_ENTITIES: False,
+        CONF_FORECAST_ADAPTER_SENSORS: True,
         CONF_HOURLY_FORECAST_DURATION: "6hour",
         CONF_UPDATE_INTERVAL_MINUTES: 15,
     }
@@ -281,8 +288,8 @@ async def test_form_rejects_request_error(hass):
     client.async_get_alert_headlines.assert_not_called()
 
 
-async def test_options_flow_configures_optional_extra_entities(hass):
-    """Options flow should allow companion diagnostic sensors to be enabled."""
+async def test_options_flow_configures_split_optional_sensor_groups(hass):
+    """Options flow should allow split companion sensor groups to be enabled."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         entry_id="entry-id",
@@ -293,7 +300,10 @@ async def test_options_flow_configures_optional_extra_entities(hass):
             CONF_UNITS: "e",
             CONF_LANGUAGE: "en-US",
         },
-        options={CONF_EXTRA_ENTITIES: False},
+        options={
+            CONF_CURRENT_DETAIL_SENSORS: False,
+            CONF_FORECAST_ADAPTER_SENSORS: False,
+        },
     )
     entry.add_to_hass(hass)
 
@@ -309,19 +319,56 @@ async def test_options_flow_configures_optional_extra_entities(hass):
     ):
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
-            user_input={CONF_EXTRA_ENTITIES: True},
+            user_input={
+                CONF_CURRENT_DETAIL_SENSORS: True,
+                CONF_FORECAST_ADAPTER_SENSORS: True,
+            },
         )
 
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_CURRENT_DETAIL_SENSORS: True,
         CONF_ENABLE_AIR_QUALITY: False,
         CONF_ENABLE_POLLEN: False,
         CONF_ENABLE_TROPICAL_WEATHER: False,
-        CONF_EXTRA_ENTITIES: True,
+        CONF_FORECAST_ADAPTER_SENSORS: True,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 30,
     }
+
+
+async def test_options_flow_defaults_split_options_from_legacy_extra_entities(hass):
+    """Legacy extra_entities entries should default both split groups to enabled."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_EXTRA_ENTITIES: True},
+    )
+    entry.add_to_hass(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    with patch.object(
+        hass.config_entries,
+        "async_reload",
+        AsyncMock(return_value=True),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={},
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_CURRENT_DETAIL_SENSORS] is True
+    assert result["data"][CONF_FORECAST_ADAPTER_SENSORS] is True
 
 
 async def test_options_flow_configures_update_interval_controls(hass):
@@ -337,7 +384,7 @@ async def test_options_flow_configures_update_interval_controls(hass):
             CONF_LANGUAGE: "en-US",
         },
         options={
-            CONF_EXTRA_ENTITIES: True,
+            CONF_CURRENT_DETAIL_SENSORS: True,
             CONF_UPDATE_INTERVAL_MINUTES: 30,
         },
     )
@@ -356,7 +403,7 @@ async def test_options_flow_configures_update_interval_controls(hass):
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={
-                CONF_EXTRA_ENTITIES: False,
+                CONF_CURRENT_DETAIL_SENSORS: False,
                 CONF_UPDATE_INTERVAL_MINUTES: "60",
             },
         )
@@ -364,10 +411,11 @@ async def test_options_flow_configures_update_interval_controls(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_CURRENT_DETAIL_SENSORS: False,
         CONF_ENABLE_AIR_QUALITY: False,
         CONF_ENABLE_POLLEN: False,
         CONF_ENABLE_TROPICAL_WEATHER: False,
-        CONF_EXTRA_ENTITIES: False,
+        CONF_FORECAST_ADAPTER_SENSORS: False,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 60,
     }
@@ -387,7 +435,8 @@ async def test_options_flow_configures_forecast_durations(hass):
         },
         options={
             CONF_DAILY_FORECAST_DURATION: "7day",
-            CONF_EXTRA_ENTITIES: True,
+            CONF_CURRENT_DETAIL_SENSORS: True,
+            CONF_FORECAST_ADAPTER_SENSORS: True,
             CONF_HOURLY_FORECAST_DURATION: "2day",
             CONF_UPDATE_INTERVAL_MINUTES: 30,
         },
@@ -408,7 +457,8 @@ async def test_options_flow_configures_forecast_durations(hass):
             result["flow_id"],
             user_input={
                 CONF_DAILY_FORECAST_DURATION: "15day",
-                CONF_EXTRA_ENTITIES: True,
+                CONF_CURRENT_DETAIL_SENSORS: True,
+                CONF_FORECAST_ADAPTER_SENSORS: True,
                 CONF_HOURLY_FORECAST_DURATION: "6hour",
                 CONF_UPDATE_INTERVAL_MINUTES: 15,
             },
@@ -417,10 +467,11 @@ async def test_options_flow_configures_forecast_durations(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "15day",
+        CONF_CURRENT_DETAIL_SENSORS: True,
         CONF_ENABLE_AIR_QUALITY: False,
         CONF_ENABLE_POLLEN: False,
         CONF_ENABLE_TROPICAL_WEATHER: False,
-        CONF_EXTRA_ENTITIES: True,
+        CONF_FORECAST_ADAPTER_SENSORS: True,
         CONF_HOURLY_FORECAST_DURATION: "6hour",
         CONF_UPDATE_INTERVAL_MINUTES: 15,
     }
@@ -460,10 +511,11 @@ async def test_options_flow_configures_pollen_forecast(hass):
     assert result["type"] == "create_entry"
     assert result["data"] == {
         CONF_DAILY_FORECAST_DURATION: "7day",
+        CONF_CURRENT_DETAIL_SENSORS: False,
         CONF_ENABLE_AIR_QUALITY: False,
         CONF_ENABLE_POLLEN: True,
         CONF_ENABLE_TROPICAL_WEATHER: False,
-        CONF_EXTRA_ENTITIES: False,
+        CONF_FORECAST_ADAPTER_SENSORS: False,
         CONF_HOURLY_FORECAST_DURATION: "2day",
         CONF_UPDATE_INTERVAL_MINUTES: 30,
     }
@@ -489,7 +541,8 @@ async def test_options_flow_configures_tropical_weather(hass):
         user_input={
             CONF_DAILY_FORECAST_DURATION: "7day",
             CONF_ENABLE_AIR_QUALITY: False,
-            CONF_EXTRA_ENTITIES: True,
+            CONF_CURRENT_DETAIL_SENSORS: True,
+            CONF_FORECAST_ADAPTER_SENSORS: True,
             CONF_ENABLE_POLLEN: False,
             CONF_ENABLE_TROPICAL_WEATHER: True,
             CONF_HOURLY_FORECAST_DURATION: "2day",
@@ -521,7 +574,8 @@ async def test_options_flow_configures_air_quality(hass):
         user_input={
             CONF_DAILY_FORECAST_DURATION: "7day",
             CONF_ENABLE_AIR_QUALITY: True,
-            CONF_EXTRA_ENTITIES: False,
+            CONF_CURRENT_DETAIL_SENSORS: False,
+            CONF_FORECAST_ADAPTER_SENSORS: False,
             CONF_ENABLE_POLLEN: False,
             CONF_ENABLE_TROPICAL_WEATHER: False,
             CONF_HOURLY_FORECAST_DURATION: "2day",

@@ -83,7 +83,7 @@ def test_demo_dashboard_marks_future_features_as_planned() -> None:
     yaml_text = DEMO_CARD_PATH.read_text(encoding="utf-8").lower()
 
     assert "| weather alerts | shipped |" in yaml_text
-    assert "| optional extra weather entities | shipped |" in yaml_text
+    assert "| current detail and forecast adapter sensors | shipped |" in yaml_text
 
 
 def test_demo_dashboard_formats_home_assistant_conditions_for_display() -> None:

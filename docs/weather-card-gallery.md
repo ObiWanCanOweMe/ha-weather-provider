@@ -49,7 +49,7 @@ Simple Weather Card v0.8.5 also needs `dashboards/resources/twc-simple-weather-c
 | Home Assistant Weather Forecast Card | `weather-forecast` | Live | Uses `weather.twc` directly |
 | Simple Weather Card | `custom:simple-weather-card` | Installed via HACS | Uses `weather.twc` directly |
 | Hourly Weather Card | `custom:hourly-weather` | Installed via HACS | Uses `weather.twc` hourly forecast |
-| Animated Weather Card | `custom:bom-weather-card` | Requires adapter entities | Uses optional integration current sensors plus daily forecast adapter sensors |
+| Animated Weather Card | `custom:bom-weather-card` | Requires adapter entities | Uses current detail sensors plus daily forecast adapter sensors |
 | Weather Radar Card | `custom:weather-radar-card` | Requires non-TWC source | Uses RainViewer radar tiles; not TWC-backed |
 | Clock Weather Card | `custom:clock-weather-card` | Installed via HACS | Uses `weather.twc` and `sun.sun` |
 | Meteoalarm Card | Built-in `entities` placeholder | Adapter needed | TWC alert count/summary data needs an adapter before `custom:meteoalarm-card` can render it |
@@ -59,7 +59,7 @@ Simple Weather Card v0.8.5 also needs `dashboards/resources/twc-simple-weather-c
 
 ## Optional Adapter Entities
 
-Some cards expect individual sensor entities instead of a single weather entity. Enable the integration's optional extra entities before using the full gallery.
+Some cards expect individual sensor entities instead of a single weather entity. Enable the integration's current detail sensors before using current-condition adapter cards.
 
 Expected generated entities include:
 
@@ -73,9 +73,9 @@ Expected generated entities include:
 - `sensor.twc_wind_gust`
 - `sensor.twc_alert_count`
 
-These are created by the integration's optional extra entities setting, not by dashboard-local template helpers.
+These are created by the integration's current detail sensors option, not by dashboard-local template helpers.
 
-The Animated Weather Card forecast rows use the integration's optional daily forecast adapter sensors. Enable optional extra entities to create these forecast entities:
+The Animated Weather Card forecast rows use the integration's optional daily forecast adapter sensors. Enable forecast adapter sensors to create these forecast entities:
 
 - `sensor.twc_daily_forecast_day_1_condition`
 - `sensor.twc_daily_forecast_day_1_high`
@@ -84,7 +84,7 @@ The Animated Weather Card forecast rows use the integration's optional daily for
 - `sensor.twc_daily_forecast_day_1_precip_amount`
 - `sensor.twc_daily_forecast_day_1_summary`
 
-The same six-entity pattern repeats for days 2 through 5.
+The same six-entity pattern repeats for days 2 through 5. Forecast adapter sensors are disabled by default after creation because they are high-cardinality compatibility entities; enable the specific entities you need from Home Assistant's entity registry.
 
 ## Non-TWC Dependencies
 
@@ -94,7 +94,7 @@ The Lovelace Horizon Card depends on Home Assistant's sun/moon context. The Weat
 
 1. Install any third-party cards you want to render.
 2. Register their frontend resources in Home Assistant.
-3. Enable the integration's optional extra entities if you want to test adapter-backed cards.
+3. Enable the integration's current detail sensors and forecast adapter sensors if you want to test adapter-backed cards.
 4. Open Home Assistant.
 5. Go to the dashboard raw configuration editor or storage-backed dashboard import path.
 6. Add the contents of `dashboards/the-weather-company-card-gallery.yaml` as a full Sections view configuration.

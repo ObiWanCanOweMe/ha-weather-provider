@@ -7,7 +7,8 @@ Custom Home Assistant integration for The Weather Company API. The integration c
 - Weather entity for current conditions and forecasts.
 - Config flow setup with API key, latitude, longitude, units, and language.
 - Configurable refresh interval, daily forecast duration, and hourly forecast duration.
-- Optional extra entities for current-condition values, daily forecast adapter sensors, alert counts, observation time, and integration version.
+- Optional current-detail sensors for current-condition values, alert counts, observation time, and integration version.
+- Optional forecast adapter sensors for custom dashboard cards that require per-day sensor entities.
 - Optional packages for pollen, air quality, and tropical weather when your TWC API key is entitled for those endpoints.
 - Redacted diagnostics for Home Assistant issue reporting.
 - Demo dashboard YAML and weather card gallery YAML.
@@ -85,7 +86,7 @@ The config flow asks for:
 - **Longitude**: Decimal degrees. East is positive, west is negative.
 - **Units**: TWC unit system.
 - **Language**: TWC response language.
-- **Install options**: Forecast durations, update interval, optional extra entities, pollen, air quality, and tropical weather.
+- **Install options**: Forecast durations, update interval, current detail sensors, forecast adapter sensors, pollen, air quality, and tropical weather.
 
 The integration intentionally asks for latitude and longitude instead of only using Home Assistant's configured location, which makes it easy to demo or monitor a specific place.
 
@@ -98,7 +99,8 @@ Available options include:
 - **Update interval**: Default refresh interval is 30 minutes.
 - **Daily forecast duration**: Default is `7day`.
 - **Hourly forecast duration**: Default is `2day`.
-- **Create optional extra entities**: Adds companion sensors for dashboards and adapters.
+- **Create current detail sensors**: Adds individual current-condition sensors for dashboards and automations.
+- **Create forecast adapter sensors**: Adds per-day forecast adapter sensors for custom dashboard cards. These high-cardinality entities are disabled by default after creation and can be enabled individually in Home Assistant.
 - **Enable pollen forecast**: Requests TWC pollen forecast and U.S. pollen observation endpoints.
 - **Enable air quality**: Requests the TWC global air quality endpoint.
 - **Enable tropical weather**: Requests compact active tropical storm summary data.
