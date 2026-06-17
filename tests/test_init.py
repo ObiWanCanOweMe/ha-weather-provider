@@ -9,13 +9,21 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ha_weather_provider import async_migrate_entry, async_setup_entry, async_unload_entry
+from custom_components.ha_weather_provider import (
+    CONFIG_ENTRY_VERSION,
+    async_migrate_entry,
+    async_setup_entry,
+    async_unload_entry,
+)
 from custom_components.ha_weather_provider.const import (
     CONF_API_KEY,
+    CONF_CURRENT_DETAIL_SENSORS,
     CONF_DAILY_FORECAST_DURATION,
     CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
+    CONF_EXTRA_ENTITIES,
+    CONF_FORECAST_ADAPTER_SENSORS,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
@@ -42,7 +50,7 @@ async def test_async_migrate_entry_rejects_legacy_location_only_entry(hass, capl
 
 
 async def test_async_migrate_entry_updates_valid_entry_version(hass):
-    """Valid entries should be marked as migrated to version 2."""
+    """Valid entries should be marked as migrated to the current version."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         entry_id="entry-id",
@@ -60,7 +68,64 @@ async def test_async_migrate_entry_updates_valid_entry_version(hass):
     result = await async_migrate_entry(hass, entry)
 
     assert result is True
-    assert entry.version == 2
+    assert entry.version == CONFIG_ENTRY_VERSION
+    assert entry.options[CONF_CURRENT_DETAIL_SENSORS] is False
+    assert entry.options[CONF_FORECAST_ADAPTER_SENSORS] is False
+
+
+async def test_async_migrate_entry_maps_legacy_extra_entities_option(hass):
+    """Legacy extra_entities should migrate to both split sensor groups."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        version=2,
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={CONF_EXTRA_ENTITIES: True, CONF_UPDATE_INTERVAL_MINUTES: 60},
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == CONFIG_ENTRY_VERSION
+    assert entry.options[CONF_EXTRA_ENTITIES] is True
+    assert entry.options[CONF_CURRENT_DETAIL_SENSORS] is True
+    assert entry.options[CONF_FORECAST_ADAPTER_SENSORS] is True
+    assert entry.options[CONF_UPDATE_INTERVAL_MINUTES] == 60
+
+
+async def test_async_migrate_entry_preserves_split_option_values(hass):
+    """Migration should not override split options that already exist."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="entry-id",
+        version=2,
+        data={
+            CONF_API_KEY: "secret",
+            CONF_LATITUDE: 40.58,
+            CONF_LONGITUDE: -111.66,
+            CONF_UNITS: "e",
+            CONF_LANGUAGE: "en-US",
+        },
+        options={
+            CONF_EXTRA_ENTITIES: True,
+            CONF_CURRENT_DETAIL_SENSORS: False,
+        },
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == CONFIG_ENTRY_VERSION
+    assert entry.options[CONF_CURRENT_DETAIL_SENSORS] is False
+    assert entry.options[CONF_FORECAST_ADAPTER_SENSORS] is True
 
 
 @pytest.mark.asyncio

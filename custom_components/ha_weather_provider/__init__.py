@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["weather", "sensor"]
+CONFIG_ENTRY_VERSION = 3
 REQUIRED_ENTRY_KEYS = (
     "api_key",
     "latitude",
@@ -78,6 +79,21 @@ def _entry_enable_air_quality(entry: ConfigEntry) -> bool:
     return options.get(CONF_ENABLE_AIR_QUALITY) is True
 
 
+def _migrated_options(entry: ConfigEntry) -> dict[str, object]:
+    """Return options migrated to the current grouped option shape."""
+    from .const import (
+        CONF_CURRENT_DETAIL_SENSORS,
+        CONF_EXTRA_ENTITIES,
+        CONF_FORECAST_ADAPTER_SENSORS,
+    )
+
+    options = dict(getattr(entry, "options", {}) or {})
+    legacy_extra_entities = options.get(CONF_EXTRA_ENTITIES) is True
+    options.setdefault(CONF_CURRENT_DETAIL_SENSORS, legacy_extra_entities)
+    options.setdefault(CONF_FORECAST_ADAPTER_SENSORS, legacy_extra_entities)
+    return options
+
+
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate legacy config entries."""
     from .const import DOMAIN
@@ -92,7 +108,11 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         return False
 
-    hass.config_entries.async_update_entry(entry, version=2)
+    hass.config_entries.async_update_entry(
+        entry,
+        options=_migrated_options(entry),
+        version=CONFIG_ENTRY_VERSION,
+    )
     return True
 
 

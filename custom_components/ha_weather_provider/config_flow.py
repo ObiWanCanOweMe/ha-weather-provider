@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from . import CONFIG_ENTRY_VERSION
 from .const import (
     CONF_API_KEY,
     CONF_CURRENT_DETAIL_SENSORS,
@@ -165,7 +166,7 @@ def _options_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
 class HAWeatherProviderConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for HA Weather Provider."""
 
-    VERSION = 2
+    VERSION = CONFIG_ENTRY_VERSION
 
     @staticmethod
     def async_get_options_flow(

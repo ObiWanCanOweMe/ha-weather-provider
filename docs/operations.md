@@ -34,6 +34,14 @@ Unexpected optional request failures reported as `TWCRequestError` raise a coord
 
 The Weather Company API keys can be entitled for different endpoint packages. A key can work for current observations, daily forecasts, hourly forecasts, and alert headlines while not being entitled for pollen, tropical weather, air quality, or other optional packages. When an optional package is not entitled, disable that option or expect the corresponding optional payload to remain empty; related sensors may expose no value or endpoint-specific empty states.
 
+## Upgrade behavior
+
+Home Assistant runs the integration config entry migration automatically when an older entry loads. Entries created before the optional sensor surface was split can contain the legacy `extra_entities` option. During migration, `extra_entities: true` is mapped to both `current_detail_sensors: true` and `forecast_adapter_sensors: true`; `extra_entities: false` or a missing value maps both newer options to `false`.
+
+The legacy option is preserved during migration for compatibility, but the current options flow only writes the newer grouped options. Once a user saves options after upgrading, Home Assistant stores the grouped shape.
+
+No entity unique IDs are intentionally retired by this migration. The weather entity remains `weather.twc` for fresh installs, existing unique IDs are preserved, and the integration does not perform broad entity registry cleanup. If a future release retires entities, cleanup should be narrowly scoped to known integration-owned unique IDs and documented here.
+
 ## Polling model
 
 The Weather Company Standard Weather Data package is polled over HTTPS. The integration uses request/response API calls and does not use webhooks or MQTT.
