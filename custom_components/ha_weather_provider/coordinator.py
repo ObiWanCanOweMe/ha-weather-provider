@@ -8,6 +8,7 @@ from datetime import timedelta
 import logging
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import (
@@ -50,6 +51,7 @@ class TWCEndpointCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         *,
         name: str,
         fetch_method: Callable[[], Awaitable[dict[str, Any]]],
+        config_entry: ConfigEntry | None = None,
         optional: bool = False,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
@@ -57,6 +59,7 @@ class TWCEndpointCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=config_entry,
             name=f"{DOMAIN} {name}",
             update_interval=update_interval,
             always_update=False,
@@ -98,6 +101,7 @@ class TWCObservationCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the observation coordinator."""
@@ -106,6 +110,7 @@ class TWCObservationCoordinator(TWCEndpointCoordinator):
             client,
             name="observation",
             fetch_method=client.async_get_current_conditions,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
 
@@ -118,6 +123,7 @@ class TWCDailyForecastCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the daily forecast coordinator."""
@@ -126,6 +132,7 @@ class TWCDailyForecastCoordinator(TWCEndpointCoordinator):
             client,
             name="daily forecast",
             fetch_method=client.async_get_daily_forecast,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
 
@@ -138,6 +145,7 @@ class TWCHourlyForecastCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the hourly forecast coordinator."""
@@ -146,6 +154,7 @@ class TWCHourlyForecastCoordinator(TWCEndpointCoordinator):
             client,
             name="hourly forecast",
             fetch_method=client.async_get_hourly_forecast,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
 
@@ -158,6 +167,7 @@ class TWCAlertCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the alert coordinator."""
@@ -166,6 +176,7 @@ class TWCAlertCoordinator(TWCEndpointCoordinator):
             client,
             name="alert headlines",
             fetch_method=client.async_get_alert_headlines,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
 
@@ -178,6 +189,7 @@ class TWCPollenForecastCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the pollen forecast coordinator."""
@@ -186,6 +198,7 @@ class TWCPollenForecastCoordinator(TWCEndpointCoordinator):
             client,
             name="pollen forecast",
             fetch_method=client.async_get_pollen_forecast,
+            config_entry=config_entry,
             optional=True,
             update_interval=update_interval,
         )
@@ -199,6 +212,7 @@ class TWCPollenObservationCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the pollen observation coordinator."""
@@ -207,6 +221,7 @@ class TWCPollenObservationCoordinator(TWCEndpointCoordinator):
             client,
             name="pollen observation",
             fetch_method=client.async_get_pollen_observation,
+            config_entry=config_entry,
             optional=True,
             update_interval=update_interval,
         )
@@ -220,6 +235,7 @@ class TWCTropicalCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the tropical coordinator."""
@@ -228,6 +244,7 @@ class TWCTropicalCoordinator(TWCEndpointCoordinator):
             client,
             name="tropical current position",
             fetch_method=client.async_get_tropical_current_position,
+            config_entry=config_entry,
             optional=True,
             update_interval=update_interval,
         )
@@ -241,6 +258,7 @@ class TWCAirQualityCoordinator(TWCEndpointCoordinator):
         hass: HomeAssistant,
         client: TWCClient,
         *,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         """Initialize the air quality coordinator."""
@@ -249,6 +267,7 @@ class TWCAirQualityCoordinator(TWCEndpointCoordinator):
             client,
             name="air quality",
             fetch_method=client.async_get_air_quality,
+            config_entry=config_entry,
             optional=True,
             update_interval=update_interval,
         )
@@ -265,11 +284,13 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         pollen_enabled: bool = False,
         tropical_enabled: bool = False,
         air_quality_enabled: bool = False,
+        config_entry: ConfigEntry | None = None,
         update_interval: timedelta = DEFAULT_UPDATE_INTERVAL,
     ) -> None:
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=config_entry,
             name=DOMAIN,
             update_interval=update_interval,
             always_update=False,
@@ -281,41 +302,49 @@ class TWCWeatherCoordinator(DataUpdateCoordinator[TWCWeatherData]):
         self.observation_coordinator = TWCObservationCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.daily_forecast_coordinator = TWCDailyForecastCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.hourly_forecast_coordinator = TWCHourlyForecastCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.alert_coordinator = TWCAlertCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.pollen_forecast_coordinator = TWCPollenForecastCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.pollen_observation_coordinator = TWCPollenObservationCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.tropical_coordinator = TWCTropicalCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
         self.air_quality_coordinator = TWCAirQualityCoordinator(
             hass,
             client,
+            config_entry=config_entry,
             update_interval=update_interval,
         )
 

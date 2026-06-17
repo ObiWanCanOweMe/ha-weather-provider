@@ -132,6 +132,7 @@ async def test_async_setup_entry_uses_configured_update_interval(hass):
         await async_setup_entry(hass, entry)
 
     assert mock_coordinator.call_args.kwargs["update_interval"] == timedelta(minutes=60)
+    assert mock_coordinator.call_args.kwargs["config_entry"] is entry
 
 
 @pytest.mark.asyncio

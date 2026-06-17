@@ -144,6 +144,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         pollen_enabled=_entry_enable_pollen(entry),
         tropical_enabled=_entry_enable_tropical_weather(entry),
         air_quality_enabled=_entry_enable_air_quality(entry),
+        config_entry=entry,
         update_interval=_entry_update_interval(entry),
     )
     await coordinator.async_config_entry_first_refresh()
