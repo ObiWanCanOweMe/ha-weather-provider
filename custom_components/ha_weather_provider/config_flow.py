@@ -11,11 +11,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_API_KEY,
+    CONF_CURRENT_DETAIL_SENSORS,
     CONF_DAILY_FORECAST_DURATION,
     CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
+    CONF_FORECAST_ADAPTER_SENSORS,
     CONF_HOURLY_FORECAST_DURATION,
     CONF_LANGUAGE,
     CONF_LATITUDE,
@@ -56,6 +58,11 @@ def _flow_options_from_input(user_input: dict[str, Any]) -> dict[str, Any]:
             DEFAULT_DAILY_FORECAST_DURATION,
         ),
         CONF_EXTRA_ENTITIES: user_input.get(CONF_EXTRA_ENTITIES, False),
+        CONF_CURRENT_DETAIL_SENSORS: user_input.get(CONF_CURRENT_DETAIL_SENSORS, False),
+        CONF_FORECAST_ADAPTER_SENSORS: user_input.get(
+            CONF_FORECAST_ADAPTER_SENSORS,
+            False,
+        ),
         CONF_ENABLE_POLLEN: user_input.get(CONF_ENABLE_POLLEN, False),
         CONF_ENABLE_TROPICAL_WEATHER: user_input.get(
             CONF_ENABLE_TROPICAL_WEATHER,
@@ -83,7 +90,8 @@ def _setup_schema() -> vol.Schema:
                 CONF_DAILY_FORECAST_DURATION,
                 default=DEFAULT_DAILY_FORECAST_DURATION,
             ): vol.In(DAILY_FORECAST_DURATIONS),
-            vol.Optional(CONF_EXTRA_ENTITIES, default=False): bool,
+            vol.Optional(CONF_CURRENT_DETAIL_SENSORS, default=False): bool,
+            vol.Optional(CONF_FORECAST_ADAPTER_SENSORS, default=False): bool,
             vol.Optional(CONF_ENABLE_POLLEN, default=False): bool,
             vol.Optional(CONF_ENABLE_TROPICAL_WEATHER, default=False): bool,
             vol.Optional(CONF_ENABLE_AIR_QUALITY, default=False): bool,
@@ -111,8 +119,18 @@ def _options_schema(config_entry: config_entries.ConfigEntry) -> vol.Schema:
                 ),
             ): vol.In(DAILY_FORECAST_DURATIONS),
             vol.Optional(
-                CONF_EXTRA_ENTITIES,
-                default=config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+                CONF_CURRENT_DETAIL_SENSORS,
+                default=config_entry.options.get(
+                    CONF_CURRENT_DETAIL_SENSORS,
+                    config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+                ),
+            ): bool,
+            vol.Optional(
+                CONF_FORECAST_ADAPTER_SENSORS,
+                default=config_entry.options.get(
+                    CONF_FORECAST_ADAPTER_SENSORS,
+                    config_entry.options.get(CONF_EXTRA_ENTITIES, False),
+                ),
             ): bool,
             vol.Optional(
                 CONF_ENABLE_POLLEN,

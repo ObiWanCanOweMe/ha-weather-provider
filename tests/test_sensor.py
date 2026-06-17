@@ -20,10 +20,12 @@ from homeassistant.const import (
 )
 
 from custom_components.ha_weather_provider.const import (
+    CONF_CURRENT_DETAIL_SENSORS,
     CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
+    CONF_FORECAST_ADAPTER_SENSORS,
     CONF_UNITS,
     DOMAIN,
     INTEGRATION_VERSION,
@@ -61,7 +63,8 @@ DAILY_FORECAST_SENSOR_KEYS = (
 
 ENTITY_SURFACE_BASELINE = {
     "weather": 1,
-    "extra": 141,
+    "current_detail": 31,
+    "forecast_adapter": 110,
     "pollen": 25,
     "tropical": 4,
     "air_quality": 27,
@@ -245,7 +248,19 @@ async def test_sensor_setup_adds_air_quality_entities_when_enabled(hass) -> None
     ("options", "expected_count"),
     [
         ({}, 0),
-        ({CONF_EXTRA_ENTITIES: True}, ENTITY_SURFACE_BASELINE["extra"]),
+        (
+            {CONF_CURRENT_DETAIL_SENSORS: True},
+            ENTITY_SURFACE_BASELINE["current_detail"],
+        ),
+        (
+            {CONF_FORECAST_ADAPTER_SENSORS: True},
+            ENTITY_SURFACE_BASELINE["forecast_adapter"],
+        ),
+        (
+            {CONF_EXTRA_ENTITIES: True},
+            ENTITY_SURFACE_BASELINE["current_detail"]
+            + ENTITY_SURFACE_BASELINE["forecast_adapter"],
+        ),
         ({CONF_ENABLE_POLLEN: True}, ENTITY_SURFACE_BASELINE["pollen"]),
         (
             {CONF_ENABLE_TROPICAL_WEATHER: True},
@@ -286,7 +301,7 @@ def test_all_optional_entities_plus_weather_baseline_count() -> None:
 
 
 async def test_sensor_setup_adds_optional_entities_when_enabled(hass) -> None:
-    """The first optional milestone should expose a compact diagnostic sensor set."""
+    """Legacy extra entities should still expose the full compatibility sensor set."""
     async_add_entities = Mock()
     entry = _entry(options={CONF_EXTRA_ENTITIES: True})
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
@@ -339,6 +354,51 @@ async def test_sensor_setup_adds_optional_entities_when_enabled(hass) -> None:
             for key in DAILY_FORECAST_SENSOR_KEYS
         ],
     ]
+
+
+async def test_sensor_setup_adds_current_detail_entities_when_enabled(hass) -> None:
+    """Current detail sensors should be independently configurable."""
+    async_add_entities = Mock()
+    entry = _entry(options={CONF_CURRENT_DETAIL_SENSORS: True})
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    entities = async_add_entities.call_args.args[0]
+    assert len(entities) == ENTITY_SURFACE_BASELINE["current_detail"]
+    assert [entity.unique_id for entity in entities[:5]] == [
+        "entry-id_alert_count",
+        "entry-id_condition_phrase",
+        "entry-id_observation_time",
+        "entry-id_integration_version",
+        "entry-id_wind_gust",
+    ]
+    assert not any(
+        entity.unique_id.startswith("entry-id_daily_forecast_day_")
+        for entity in entities
+    )
+
+
+async def test_sensor_setup_adds_disabled_forecast_adapter_entities_when_enabled(
+    hass,
+) -> None:
+    """Forecast adapter sensors should be high-cardinality and disabled by default."""
+    async_add_entities = Mock()
+    entry = _entry(options={CONF_FORECAST_ADAPTER_SENSORS: True})
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    entities = async_add_entities.call_args.args[0]
+    assert len(entities) == ENTITY_SURFACE_BASELINE["forecast_adapter"]
+    assert all(
+        entity.unique_id.startswith("entry-id_daily_forecast_day_")
+        for entity in entities
+    )
+    assert all(
+        entity.entity_description.entity_registry_enabled_default is False
+        for entity in entities
+    )
 
 
 def test_optional_sensor_values() -> None:

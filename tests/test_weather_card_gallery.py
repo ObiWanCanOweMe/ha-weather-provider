@@ -246,7 +246,8 @@ def test_weather_card_gallery_docs_explain_setup_boundaries() -> None:
     assert "HACS" in docs_text
     assert "does not bundle third-party JavaScript" in docs_text
     assert "replace every `weather.twc` reference" in docs_text
-    assert "optional extra entities" in docs_text
+    assert "current detail sensors" in docs_text
+    assert "forecast adapter sensors" in docs_text
     assert "Sections view" in docs_text
 
 

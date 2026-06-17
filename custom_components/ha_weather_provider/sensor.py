@@ -18,10 +18,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    CONF_CURRENT_DETAIL_SENSORS,
     CONF_ENABLE_AIR_QUALITY,
     CONF_ENABLE_POLLEN,
     CONF_ENABLE_TROPICAL_WEATHER,
     CONF_EXTRA_ENTITIES,
+    CONF_FORECAST_ADAPTER_SENSORS,
     CONF_UNITS,
     DOMAIN,
     INTEGRATION_VERSION,
@@ -781,12 +783,14 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_condition",
                     name=f"Daily Forecast Day {day} Condition",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-partly-cloudy",
                     value_fn=lambda data, index=index: _daily_condition(data, index),
                 ),
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_high",
                     name=f"Daily Forecast Day {day} High",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.TEMPERATURE,
                     value_fn=lambda data, index=index: _forecast_high(
                         data.daily_forecast, index
@@ -796,6 +800,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_low",
                     name=f"Daily Forecast Day {day} Low",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.TEMPERATURE,
                     value_fn=lambda data, index=index: _daily_low(data, index),
                     unit_key="temperature",
@@ -803,6 +808,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_precip_probability",
                     name=f"Daily Forecast Day {day} Precip Probability",
+                    entity_registry_enabled_default=False,
                     icon="mdi:water-percent",
                     value_fn=lambda data, index=index: _daily_precip_probability(
                         data, index
@@ -812,6 +818,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_precip_amount",
                     name=f"Daily Forecast Day {day} Precip Amount",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-rainy",
                     value_fn=lambda data, index=index: _daily_precip_amount(data, index),
                     unit_key="precipitation",
@@ -819,12 +826,14 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_summary",
                     name=f"Daily Forecast Day {day} Summary",
+                    entity_registry_enabled_default=False,
                     icon="mdi:text-short",
                     value_fn=lambda data, index=index: _daily_summary(data, index),
                 ),
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_phrase",
                     name=f"Daily Forecast Day {day} Day Phrase",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-partly-cloudy",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "wxPhraseLong", index, daytime=True
@@ -833,6 +842,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_phrase",
                     name=f"Daily Forecast Day {day} Night Phrase",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-night",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "wxPhraseLong", index, daytime=False
@@ -841,6 +851,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_cloud_cover",
                     name=f"Daily Forecast Day {day} Day Cloud Cover",
+                    entity_registry_enabled_default=False,
                     icon="mdi:cloud-percent",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "cloudCover", index, daytime=True
@@ -850,6 +861,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_cloud_cover",
                     name=f"Daily Forecast Day {day} Night Cloud Cover",
+                    entity_registry_enabled_default=False,
                     icon="mdi:cloud-percent",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "cloudCover", index, daytime=False
@@ -859,6 +871,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_precip_probability",
                     name=f"Daily Forecast Day {day} Day Precip Probability",
+                    entity_registry_enabled_default=False,
                     icon="mdi:water-percent",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "precipChance", index, daytime=True
@@ -868,6 +881,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_precip_probability",
                     name=f"Daily Forecast Day {day} Night Precip Probability",
+                    entity_registry_enabled_default=False,
                     icon="mdi:water-percent",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "precipChance", index, daytime=False
@@ -877,6 +891,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_precip_amount",
                     name=f"Daily Forecast Day {day} Day Precip Amount",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-rainy",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "qpf", index, daytime=True
@@ -886,6 +901,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_precip_amount",
                     name=f"Daily Forecast Day {day} Night Precip Amount",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-rainy",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "qpf", index, daytime=False
@@ -895,6 +911,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_thunderstorm_probability",
                     name=f"Daily Forecast Day {day} Day Thunderstorm Probability",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-lightning",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "thunderIndex", index, daytime=True
@@ -903,6 +920,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_thunderstorm_probability",
                     name=f"Daily Forecast Day {day} Night Thunderstorm Probability",
+                    entity_registry_enabled_default=False,
                     icon="mdi:weather-lightning",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "thunderIndex", index, daytime=False
@@ -911,6 +929,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_uv_index",
                     name=f"Daily Forecast Day {day} Day UV Index",
+                    entity_registry_enabled_default=False,
                     icon="mdi:sun-wireless",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "uvIndex", index, daytime=True
@@ -919,6 +938,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_uv_index",
                     name=f"Daily Forecast Day {day} Night UV Index",
+                    entity_registry_enabled_default=False,
                     icon="mdi:sun-wireless",
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "uvIndex", index, daytime=False
@@ -927,6 +947,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_day_wind_speed",
                     name=f"Daily Forecast Day {day} Day Wind Speed",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.WIND_SPEED,
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "windSpeed", index, daytime=True
@@ -936,6 +957,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_night_wind_speed",
                     name=f"Daily Forecast Day {day} Night Wind Speed",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.WIND_SPEED,
                     value_fn=lambda data, index=index: _daily_daypart_value(
                         data, "windSpeed", index, daytime=False
@@ -945,6 +967,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_apparent_max",
                     name=f"Daily Forecast Day {day} Apparent Max",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.TEMPERATURE,
                     value_fn=lambda data, index=index: _daily_apparent_extreme(
                         data, index, high=True
@@ -954,6 +977,7 @@ def _daily_forecast_sensor_descriptions() -> tuple[TWCSensorEntityDescription, .
                 TWCSensorEntityDescription(
                     key=f"daily_forecast_day_{day}_apparent_min",
                     name=f"Daily Forecast Day {day} Apparent Min",
+                    entity_registry_enabled_default=False,
                     device_class=SensorDeviceClass.TEMPERATURE,
                     value_fn=lambda data, index=index: _daily_apparent_extreme(
                         data, index, high=False
@@ -1512,9 +1536,25 @@ COMPACT_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
 )
 
 
-SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
-    COMPACT_SENSOR_DESCRIPTIONS + _daily_forecast_sensor_descriptions()
+CURRENT_DETAIL_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
+    COMPACT_SENSOR_DESCRIPTIONS
 )
+FORECAST_ADAPTER_SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
+    _daily_forecast_sensor_descriptions()
+)
+SENSOR_DESCRIPTIONS: tuple[TWCSensorEntityDescription, ...] = (
+    CURRENT_DETAIL_SENSOR_DESCRIPTIONS + FORECAST_ADAPTER_SENSOR_DESCRIPTIONS
+)
+
+
+def _option_enabled(entry: ConfigEntry, option_key: str) -> bool:
+    """Return whether an option is explicitly enabled."""
+    return entry.options.get(option_key) is True
+
+
+def _legacy_extra_entities_enabled(entry: ConfigEntry) -> bool:
+    """Return whether the legacy broad extra-entities option is enabled."""
+    return entry.options.get(CONF_EXTRA_ENTITIES) is True
 
 
 async def async_setup_entry(
@@ -1522,13 +1562,16 @@ async def async_setup_entry(
 ) -> None:
     """Set up optional TWC companion sensors from a config entry."""
     descriptions: list[TWCSensorEntityDescription] = []
-    if entry.options.get(CONF_EXTRA_ENTITIES, False):
-        descriptions.extend(SENSOR_DESCRIPTIONS)
-    if entry.options.get(CONF_ENABLE_POLLEN, False):
+    legacy_extra_entities = _legacy_extra_entities_enabled(entry)
+    if legacy_extra_entities or _option_enabled(entry, CONF_CURRENT_DETAIL_SENSORS):
+        descriptions.extend(CURRENT_DETAIL_SENSOR_DESCRIPTIONS)
+    if legacy_extra_entities or _option_enabled(entry, CONF_FORECAST_ADAPTER_SENSORS):
+        descriptions.extend(FORECAST_ADAPTER_SENSOR_DESCRIPTIONS)
+    if _option_enabled(entry, CONF_ENABLE_POLLEN):
         descriptions.extend(POLLEN_SENSOR_DESCRIPTIONS)
-    if entry.options.get(CONF_ENABLE_TROPICAL_WEATHER, False):
+    if _option_enabled(entry, CONF_ENABLE_TROPICAL_WEATHER):
         descriptions.extend(TROPICAL_SENSOR_DESCRIPTIONS)
-    if entry.options.get(CONF_ENABLE_AIR_QUALITY, False):
+    if _option_enabled(entry, CONF_ENABLE_AIR_QUALITY):
         descriptions.extend(AIR_QUALITY_SENSOR_DESCRIPTIONS)
     if not descriptions:
         return
@@ -1564,6 +1607,16 @@ class TWCSensorEntity(CoordinatorEntity[TWCWeatherCoordinator], SensorEntity):
     def entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
         """Return optional TWC sensor descriptions."""
         return SENSOR_DESCRIPTIONS
+
+    @staticmethod
+    def current_detail_entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
+        """Return optional TWC current-detail sensor descriptions."""
+        return CURRENT_DETAIL_SENSOR_DESCRIPTIONS
+
+    @staticmethod
+    def forecast_adapter_entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:
+        """Return optional TWC forecast-adapter sensor descriptions."""
+        return FORECAST_ADAPTER_SENSOR_DESCRIPTIONS
 
     @staticmethod
     def pollen_entity_descriptions() -> tuple[TWCSensorEntityDescription, ...]:

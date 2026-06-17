@@ -9,7 +9,8 @@ As of the rearchitecture baseline, enabling every optional group creates:
 | Group | Entity count |
 | --- | ---: |
 | Weather entity | 1 |
-| Extra/current/detail and daily adapter sensors | 141 |
+| Current detail sensors | 31 |
+| Forecast adapter sensors | 110 |
 | Pollen sensors | 25 |
 | Tropical summary sensors | 4 |
 | Air quality sensors | 27 |
