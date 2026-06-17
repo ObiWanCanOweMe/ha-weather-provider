@@ -53,6 +53,25 @@ def _payload_presence(data: Any) -> dict[str, bool]:
     }
 
 
+def _update_interval_seconds(coordinator: Any) -> int | None:
+    """Return a coordinator update interval in seconds."""
+    update_interval = getattr(coordinator, "update_interval", None)
+    return int(update_interval.total_seconds()) if update_interval else None
+
+
+def _endpoint_coordinator_diagnostics(coordinator: Any) -> dict[str, dict[str, Any]]:
+    """Return redacted diagnostics for endpoint-family coordinators."""
+    endpoint_coordinators = getattr(coordinator, "endpoint_coordinators", {})
+    return {
+        name: {
+            "last_update_success": getattr(endpoint_coordinator, "last_update_success", None),
+            "update_interval_seconds": _update_interval_seconds(endpoint_coordinator),
+            "has_payload": bool(getattr(endpoint_coordinator, "data", None)),
+        }
+        for name, endpoint_coordinator in endpoint_coordinators.items()
+    }
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -62,14 +81,11 @@ async def async_get_config_entry_diagnostics(
     options = dict(entry.options)
     to_redact = SENSITIVE_KEYS | _secret_keys(data, options)
     coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
-    update_interval = getattr(coordinator, "update_interval", None)
     coordinator_data = getattr(coordinator, "data", None)
 
     coordinator_diagnostics: dict[str, Any] = {
         "last_update_success": getattr(coordinator, "last_update_success", None),
-        "update_interval_seconds": (
-            int(update_interval.total_seconds()) if update_interval else None
-        ),
+        "update_interval_seconds": _update_interval_seconds(coordinator),
         "enabled_optional_endpoints": {
             "pollen": bool(getattr(coordinator, "pollen_enabled", False)),
             "tropical_weather": bool(getattr(coordinator, "tropical_enabled", False)),
@@ -78,6 +94,9 @@ async def async_get_config_entry_diagnostics(
     }
     if coordinator_data is not None:
         coordinator_diagnostics["payloads"] = _payload_presence(coordinator_data)
+    endpoint_diagnostics = _endpoint_coordinator_diagnostics(coordinator)
+    if endpoint_diagnostics:
+        coordinator_diagnostics["endpoint_coordinators"] = endpoint_diagnostics
 
     return {
         "integration_version": INTEGRATION_VERSION,
