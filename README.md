@@ -107,6 +107,12 @@ Available options include:
 
 Optional endpoint failures caused by missing entitlement, no data, or auth-style unavailability do not break the core `weather.twc` entity. Unexpected request failures still fail the coordinator update so they can be investigated.
 
+## Upgrades
+
+Existing installs are migrated automatically by Home Assistant when the integration loads. Older entries that used the former **Create optional extra entities** setting are mapped to the newer **Create current detail sensors** and **Create forecast adapter sensors** options so previously exposed companion entities continue to load.
+
+The rearchitecture keeps the `weather.twc` unique ID and companion sensor unique IDs stable. This release does not intentionally retire older entity unique IDs, so it does not perform broad entity registry cleanup or delete user-customized entities.
+
 ## Dashboards
 
 This repository includes two dashboard examples:
