@@ -7,7 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    TimestampDataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from custom_components.ha_weather_provider.twc_weather_client import (
     TWCAuthError,
@@ -89,6 +92,23 @@ def test_coordinator_exposes_endpoint_family_coordinators(hass) -> None:
     )
     assert isinstance(coordinator.tropical_coordinator, TWCTropicalCoordinator)
     assert isinstance(coordinator.air_quality_coordinator, TWCAirQualityCoordinator)
+
+
+def test_forecast_coordinators_track_success_timestamps(hass) -> None:
+    """Forecast coordinators should satisfy CoordinatorWeatherEntity refresh contract."""
+    client = AsyncMock()
+    coordinator = TWCWeatherCoordinator(hass, client)
+
+    assert isinstance(
+        coordinator.daily_forecast_coordinator,
+        TimestampDataUpdateCoordinator,
+    )
+    assert isinstance(
+        coordinator.hourly_forecast_coordinator,
+        TimestampDataUpdateCoordinator,
+    )
+    assert coordinator.daily_forecast_coordinator.last_update_success_time is None
+    assert coordinator.hourly_forecast_coordinator.last_update_success_time is None
 
 
 @pytest.mark.asyncio

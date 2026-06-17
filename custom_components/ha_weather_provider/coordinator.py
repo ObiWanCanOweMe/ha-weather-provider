@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
+    TimestampDataUpdateCoordinator,
     UpdateFailed,
 )
 
@@ -41,7 +42,7 @@ class TWCWeatherData:
     air_quality: dict[str, Any] = field(default_factory=dict)
 
 
-class TWCEndpointCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class TWCEndpointCoordinator(TimestampDataUpdateCoordinator[dict[str, Any]]):
     """Coordinate refreshes for one TWC endpoint."""
 
     def __init__(
