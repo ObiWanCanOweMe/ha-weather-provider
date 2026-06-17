@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+import pytest
+
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import (
     DEGREE,
@@ -56,6 +58,14 @@ DAILY_FORECAST_SENSOR_KEYS = (
     "apparent_max",
     "apparent_min",
 )
+
+ENTITY_SURFACE_BASELINE = {
+    "weather": 1,
+    "extra": 141,
+    "pollen": 25,
+    "tropical": 4,
+    "air_quality": 27,
+}
 
 
 def _coordinator(
@@ -229,6 +239,50 @@ async def test_sensor_setup_adds_air_quality_entities_when_enabled(hass) -> None
         "entry-id_aq_co_index",
         "entry-id_aq_co_category",
     ]
+
+
+@pytest.mark.parametrize(
+    ("options", "expected_count"),
+    [
+        ({}, 0),
+        ({CONF_EXTRA_ENTITIES: True}, ENTITY_SURFACE_BASELINE["extra"]),
+        ({CONF_ENABLE_POLLEN: True}, ENTITY_SURFACE_BASELINE["pollen"]),
+        (
+            {CONF_ENABLE_TROPICAL_WEATHER: True},
+            ENTITY_SURFACE_BASELINE["tropical"],
+        ),
+        ({CONF_ENABLE_AIR_QUALITY: True}, ENTITY_SURFACE_BASELINE["air_quality"]),
+        (
+            {
+                CONF_EXTRA_ENTITIES: True,
+                CONF_ENABLE_POLLEN: True,
+                CONF_ENABLE_TROPICAL_WEATHER: True,
+                CONF_ENABLE_AIR_QUALITY: True,
+            },
+            sum(ENTITY_SURFACE_BASELINE.values()) - ENTITY_SURFACE_BASELINE["weather"],
+        ),
+    ],
+)
+async def test_sensor_setup_baseline_entity_counts(
+    hass, options: dict[str, bool], expected_count: int
+) -> None:
+    """Document the current optional sensor entity surface before rearchitecture."""
+    async_add_entities = Mock()
+    entry = _entry(options=options)
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = _coordinator()
+
+    await async_setup_entry(hass, entry, async_add_entities)
+
+    if expected_count == 0:
+        async_add_entities.assert_not_called()
+    else:
+        entities = async_add_entities.call_args.args[0]
+        assert len(entities) == expected_count
+
+
+def test_all_optional_entities_plus_weather_baseline_count() -> None:
+    """All current optional groups plus the weather entity produce 198 entities."""
+    assert sum(ENTITY_SURFACE_BASELINE.values()) == 198
 
 
 async def test_sensor_setup_adds_optional_entities_when_enabled(hass) -> None:
