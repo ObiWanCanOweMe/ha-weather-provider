@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from homeassistant.components.weather import WeatherEntityFeature
+from homeassistant.components.weather import CoordinatorWeatherEntity, WeatherEntityFeature
 from homeassistant.const import UnitOfPressure
 
 from custom_components.ha_weather_provider import const
@@ -21,6 +21,26 @@ _MISSING = object()
 MANIFEST_PATH = Path("custom_components/ha_weather_provider/manifest.json")
 
 
+def _endpoint_coordinator(data: object) -> SimpleNamespace:
+    """Return endpoint coordinator-shaped test data."""
+    return SimpleNamespace(data=data, update_interval=None)
+
+
+def _runtime_coordinator(data: TWCWeatherData) -> SimpleNamespace:
+    """Return runtime coordinator-shaped test data for the weather entity."""
+    observation_coordinator = _endpoint_coordinator(data.current)
+    daily_forecast_coordinator = _endpoint_coordinator(data.daily_forecast)
+    hourly_forecast_coordinator = _endpoint_coordinator(data.hourly_forecast)
+    alert_coordinator = _endpoint_coordinator(data.alert_headlines)
+    return SimpleNamespace(
+        data=data,
+        observation_coordinator=observation_coordinator,
+        daily_forecast_coordinator=daily_forecast_coordinator,
+        hourly_forecast_coordinator=hourly_forecast_coordinator,
+        alert_coordinator=alert_coordinator,
+    )
+
+
 def _entity(
     *,
     current: dict[str, object] | None = None,
@@ -28,87 +48,86 @@ def _entity(
     hourly_forecast: object = _MISSING,
     alert_headlines: object = _MISSING,
 ) -> HAWeatherProviderEntity:
-    coordinator = SimpleNamespace(
-        data=TWCWeatherData(
-            current=current
-            or {
-                "temperature": 72,
-                "temperatureFeelsLike": 73,
-                "relativeHumidity": 54,
-                "pressureMeanSeaLevel": 1014.7,
-                "windSpeed": 7,
-                "windGust": 12,
-                "windDirection": 220,
-                "visibility": 10,
-                "uvIndex": 6,
-                "temperatureDewPoint": 55,
-                "cloudCover": 41,
-                "wxPhraseLong": "Partly Cloudy",
-                "iconCode": 30,
-            },
-            daily_forecast={
-                "validTimeUtc": [1718121600],
-                "temperatureMax": [78],
-                "temperatureMin": [61],
-                "narrative": ["Partly cloudy."],
-                "daypart": [
-                    {
-                        "wxPhraseLong": [None, "Partly Cloudy", "Mostly Clear"],
-                        "iconCode": [None, 30, 33],
-                        "precipChance": [None, 15, 5],
-                        "qpf": [None, 0.02, 0],
-                        "relativeHumidity": [None, 54, 76],
-                        "temperatureHeatIndex": [None, 80, 62],
-                        "temperatureWindChill": [None, 72, 58],
-                        "temperatureDewPoint": [None, 55, 52],
-                        "cloudCover": [None, 38, 20],
-                        "uvIndex": [None, 6, 0],
-                        "windSpeed": [None, 8, 4],
-                        "windGust": [None, 14, 7],
-                        "windDirection": [None, 210, 190],
-                    }
-                ],
-            }
-            if daily_forecast is _MISSING
-            else daily_forecast,
-            hourly_forecast={
-                "validTimeUtc": [1718121600],
-                "temperature": [72],
-                "temperatureFeelsLike": [73],
-                "relativeHumidity": [54],
-                "pressureMeanSeaLevel": [1014.7],
-                "wxPhraseLong": ["Partly Cloudy"],
-                "iconCode": [30],
-                "cloudCover": [41],
-                "precipChance": [15],
-                "qpf": [0.02],
-                "windSpeed": [8],
-                "windGust": [12],
-                "windDirection": [210],
-                "temperatureDewPoint": [55],
-                "uvIndex": [6],
-            }
-            if hourly_forecast is _MISSING
-            else hourly_forecast,
-            alert_headlines={
-                "alerts": [
-                    {
-                        "detailKey": "abc123",
-                        "eventDescription": "Tornado Warning",
-                        "headlineText": "Tornado Warning until 7:30 PM",
-                        "severity": "Severe",
-                        "severityCode": 1,
-                        "urgency": "Expected",
-                        "certainty": "Observed",
-                        "expireTimeLocal": "2026-06-13T19:30:00-04:00",
-                        "source": "NWS",
-                    }
-                ]
-            }
-            if alert_headlines is _MISSING
-            else alert_headlines,
-        )
+    data = TWCWeatherData(
+        current=current
+        or {
+            "temperature": 72,
+            "temperatureFeelsLike": 73,
+            "relativeHumidity": 54,
+            "pressureMeanSeaLevel": 1014.7,
+            "windSpeed": 7,
+            "windGust": 12,
+            "windDirection": 220,
+            "visibility": 10,
+            "uvIndex": 6,
+            "temperatureDewPoint": 55,
+            "cloudCover": 41,
+            "wxPhraseLong": "Partly Cloudy",
+            "iconCode": 30,
+        },
+        daily_forecast={
+            "validTimeUtc": [1718121600],
+            "temperatureMax": [78],
+            "temperatureMin": [61],
+            "narrative": ["Partly cloudy."],
+            "daypart": [
+                {
+                    "wxPhraseLong": [None, "Partly Cloudy", "Mostly Clear"],
+                    "iconCode": [None, 30, 33],
+                    "precipChance": [None, 15, 5],
+                    "qpf": [None, 0.02, 0],
+                    "relativeHumidity": [None, 54, 76],
+                    "temperatureHeatIndex": [None, 80, 62],
+                    "temperatureWindChill": [None, 72, 58],
+                    "temperatureDewPoint": [None, 55, 52],
+                    "cloudCover": [None, 38, 20],
+                    "uvIndex": [None, 6, 0],
+                    "windSpeed": [None, 8, 4],
+                    "windGust": [None, 14, 7],
+                    "windDirection": [None, 210, 190],
+                }
+            ],
+        }
+        if daily_forecast is _MISSING
+        else daily_forecast,
+        hourly_forecast={
+            "validTimeUtc": [1718121600],
+            "temperature": [72],
+            "temperatureFeelsLike": [73],
+            "relativeHumidity": [54],
+            "pressureMeanSeaLevel": [1014.7],
+            "wxPhraseLong": ["Partly Cloudy"],
+            "iconCode": [30],
+            "cloudCover": [41],
+            "precipChance": [15],
+            "qpf": [0.02],
+            "windSpeed": [8],
+            "windGust": [12],
+            "windDirection": [210],
+            "temperatureDewPoint": [55],
+            "uvIndex": [6],
+        }
+        if hourly_forecast is _MISSING
+        else hourly_forecast,
+        alert_headlines={
+            "alerts": [
+                {
+                    "detailKey": "abc123",
+                    "eventDescription": "Tornado Warning",
+                    "headlineText": "Tornado Warning until 7:30 PM",
+                    "severity": "Severe",
+                    "severityCode": 1,
+                    "urgency": "Expected",
+                    "certainty": "Observed",
+                    "expireTimeLocal": "2026-06-13T19:30:00-04:00",
+                    "source": "NWS",
+                }
+            ]
+        }
+        if alert_headlines is _MISSING
+        else alert_headlines,
     )
+    coordinator = _runtime_coordinator(data)
     entry = SimpleNamespace(
         title="TWC Weather 40.5800,-111.6600",
         entry_id="abc123",
@@ -120,7 +139,14 @@ def _entity(
 async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
     """Weather setup should read the stored coordinator and add one entity."""
     async_add_entities = Mock()
-    coordinator = object()
+    coordinator = _runtime_coordinator(
+        TWCWeatherData(
+            current={},
+            daily_forecast={},
+            hourly_forecast={},
+            alert_headlines={},
+        )
+    )
     entry = SimpleNamespace(
         title="TWC Weather 40.5800,-111.6600",
         entry_id="abc123",
@@ -131,10 +157,15 @@ async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
     await async_setup_entry(hass, entry, async_add_entities)
 
     entity = async_add_entities.call_args.args[0][0]
-    assert entity.coordinator is coordinator
+    assert isinstance(entity, CoordinatorWeatherEntity)
+    assert entity.coordinator is coordinator.observation_coordinator
+    assert entity.daily_coordinator is coordinator.daily_forecast_coordinator
+    assert entity.hourly_coordinator is coordinator.hourly_forecast_coordinator
+    assert entity.alert_coordinator is coordinator.alert_coordinator
     assert entity._attr_name == "The Weather Company"
     assert entity._attr_unique_id == entry.entry_id
     assert entity.entity_id == "weather.twc"
+    assert entity.device_info["identifiers"] == {(DOMAIN, entry.entry_id)}
 
 
 def test_current_properties_map_twc_data() -> None:

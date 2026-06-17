@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.weather import Forecast, WeatherEntity, WeatherEntityFeature
+from homeassistant.components.weather import (
+    CoordinatorWeatherEntity,
+    Forecast,
+    WeatherEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .const import (
     CONF_UNITS,
@@ -17,7 +21,12 @@ from .const import (
     INTEGRATION_VERSION,
     UNIT_SYSTEMS,
 )
-from .coordinator import TWCWeatherCoordinator
+from .coordinator import (
+    TWCDailyForecastCoordinator,
+    TWCHourlyForecastCoordinator,
+    TWCObservationCoordinator,
+    TWCWeatherCoordinator,
+)
 from .twc_weather_client.normalizers import (
     alert_summaries as _alert_summaries,
     condition_from_twc as _condition,
@@ -49,7 +58,14 @@ def _forecast_high(daily_forecast: dict[str, Any], index: int) -> Any:
     return _series_item(calendar_highs, index)
 
 
-class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherEntity):
+class HAWeatherProviderEntity(
+    CoordinatorWeatherEntity[
+        TWCObservationCoordinator,
+        TWCDailyForecastCoordinator,
+        TWCHourlyForecastCoordinator,
+        None,
+    ]
+):
     """Representation of a TWC weather entity."""
 
     _attr_supported_features = (
@@ -57,22 +73,36 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
     )
 
     def __init__(self, coordinator: TWCWeatherCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(coordinator)
+        super().__init__(
+            coordinator.observation_coordinator,
+            daily_coordinator=coordinator.daily_forecast_coordinator,
+            hourly_coordinator=coordinator.hourly_forecast_coordinator,
+        )
         self._entry = entry
+        self._twc_coordinator = coordinator
+        self.daily_coordinator = coordinator.daily_forecast_coordinator
+        self.hourly_coordinator = coordinator.hourly_forecast_coordinator
+        self.alert_coordinator = coordinator.alert_coordinator
         self._attr_name = DISPLAY_NAME
         self._attr_unique_id = entry.entry_id
         self.entity_id = DEFAULT_ENTITY_ID
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
+        self._attr_device_info = DeviceInfo(
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, entry.entry_id)},
+            manufacturer=DISPLAY_NAME,
+            name=DISPLAY_NAME,
+        )
 
     @property
     def current(self) -> dict[str, Any]:
         """Return current TWC conditions."""
-        return self.coordinator.data.current
+        return self.coordinator.data or {}
 
     @property
     def alert_headlines(self) -> dict[str, Any]:
         """Return active TWC alert headlines."""
-        return self.coordinator.data.alert_headlines
+        return self.alert_coordinator.data or {}
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -147,9 +177,9 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
     def condition(self) -> str | None:
         return _condition(_value(self.current, "iconCode"), _value(self.current, "wxPhraseLong"))
 
-    async def async_forecast_daily(self) -> list[Forecast] | None:
+    def _async_forecast_daily(self) -> list[Forecast] | None:
         """Return the daily forecast in native units."""
-        data = self.coordinator.data.daily_forecast
+        data = self.daily_coordinator.data if self.daily_coordinator else None
         if not isinstance(data, dict):
             return []
         valid_times = _series_values(data.get("validTimeUtc"))
@@ -190,9 +220,9 @@ class HAWeatherProviderEntity(CoordinatorEntity[TWCWeatherCoordinator], WeatherE
 
         return forecasts
 
-    async def async_forecast_hourly(self) -> list[Forecast] | None:
+    def _async_forecast_hourly(self) -> list[Forecast] | None:
         """Return the 2-day hourly forecast in native units."""
-        data = self.coordinator.data.hourly_forecast
+        data = self.hourly_coordinator.data if self.hourly_coordinator else None
         if not isinstance(data, dict):
             return []
         valid_times = _series_values(data.get("validTimeUtc"))
