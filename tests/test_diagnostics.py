@@ -47,6 +47,18 @@ def _entry() -> SimpleNamespace:
 
 
 def _coordinator() -> SimpleNamespace:
+    endpoint_coordinators = {
+        "current": SimpleNamespace(
+            data={"temperature": 72},
+            last_update_success=True,
+            update_interval=timedelta(minutes=15),
+        ),
+        "pollen_forecast": SimpleNamespace(
+            data={},
+            last_update_success=True,
+            update_interval=timedelta(minutes=15),
+        ),
+    }
     return SimpleNamespace(
         data=TWCWeatherData(
             current={"temperature": 72},
@@ -63,6 +75,7 @@ def _coordinator() -> SimpleNamespace:
         pollen_enabled=True,
         tropical_enabled=True,
         air_quality_enabled=True,
+        endpoint_coordinators=endpoint_coordinators,
     )
 
 
@@ -97,6 +110,18 @@ async def test_config_entry_diagnostics_reports_options_and_coordinator(hass) ->
         "pollen": True,
         "tropical_weather": True,
         "air_quality": True,
+    }
+    assert diagnostics["coordinator"]["endpoint_coordinators"] == {
+        "current": {
+            "last_update_success": True,
+            "update_interval_seconds": 900,
+            "has_payload": True,
+        },
+        "pollen_forecast": {
+            "last_update_success": True,
+            "update_interval_seconds": 900,
+            "has_payload": False,
+        },
     }
 
 
