@@ -40,3 +40,9 @@ Home Assistant core's AccuWeather integration is the closest reference for this 
 - entity translation keys and stable unique IDs;
 - forecast sensors created only when the provider payload contains the source key;
 - non-essential sensors marked with `entity_registry_enabled_default=False`.
+
+## Home Assistant Polish
+
+Weather and companion sensor entities share one service device named `The Weather Company`, using the config entry id as the stable device identifier. System health reports integration version, configured option groups, optional endpoint status, coordinator update success, payload presence booleans, and API reachability without exposing API keys, latitude/longitude, or raw TWC payloads.
+
+The integration includes `icons.json` for common weather, pollen, tropical, and air-quality sensor keys while preserving explicit icons declared on existing entity descriptions.

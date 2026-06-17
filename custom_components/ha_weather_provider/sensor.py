@@ -30,6 +30,7 @@ from .const import (
     UNIT_SYSTEMS,
 )
 from .coordinator import TWCWeatherCoordinator, TWCWeatherData
+from .entity import twc_device_info
 from .twc_weather_client.normalizers import (
     condition_from_twc as _condition,
     first_daypart_value as _first_daypart_value,
@@ -1601,6 +1602,7 @@ class TWCSensorEntity(CoordinatorEntity[TWCWeatherCoordinator], SensorEntity):
         self.entity_description = description
         self._attr_name = f"{SENSOR_NAME_PREFIX} {description.name}"
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = twc_device_info(entry)
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
 
     @staticmethod
