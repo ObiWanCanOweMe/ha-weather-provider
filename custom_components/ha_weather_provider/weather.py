@@ -11,7 +11,6 @@ from homeassistant.components.weather import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .const import (
     CONF_UNITS,
@@ -27,6 +26,7 @@ from .coordinator import (
     TWCObservationCoordinator,
     TWCWeatherCoordinator,
 )
+from .entity import twc_device_info
 from .twc_weather_client.normalizers import (
     alert_summaries as _alert_summaries,
     condition_from_twc as _condition,
@@ -87,12 +87,7 @@ class HAWeatherProviderEntity(
         self._attr_unique_id = entry.entry_id
         self.entity_id = DEFAULT_ENTITY_ID
         self._units = UNIT_SYSTEMS[entry.data[CONF_UNITS]]
-        self._attr_device_info = DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, entry.entry_id)},
-            manufacturer=DISPLAY_NAME,
-            name=DISPLAY_NAME,
-        )
+        self._attr_device_info = twc_device_info(entry)
 
     @property
     def current(self) -> dict[str, Any]:

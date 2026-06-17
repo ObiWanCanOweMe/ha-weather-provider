@@ -13,7 +13,12 @@ from homeassistant.components.weather import CoordinatorWeatherEntity, WeatherEn
 from homeassistant.const import UnitOfPressure
 
 from custom_components.ha_weather_provider import const
-from custom_components.ha_weather_provider.const import CONF_UNITS, DOMAIN, UNIT_SYSTEMS
+from custom_components.ha_weather_provider.const import (
+    CONF_UNITS,
+    DOMAIN,
+    INTEGRATION_VERSION,
+    UNIT_SYSTEMS,
+)
 from custom_components.ha_weather_provider.coordinator import TWCWeatherData
 from custom_components.ha_weather_provider.weather import HAWeatherProviderEntity, async_setup_entry
 
@@ -166,6 +171,9 @@ async def test_async_setup_entry_uses_coordinator_from_hass_data(hass) -> None:
     assert entity._attr_unique_id == entry.entry_id
     assert entity.entity_id == "weather.twc"
     assert entity.device_info["identifiers"] == {(DOMAIN, entry.entry_id)}
+    assert entity.device_info["manufacturer"] == "The Weather Company"
+    assert entity.device_info["name"] == "The Weather Company"
+    assert entity.device_info["sw_version"] == INTEGRATION_VERSION
 
 
 def test_current_properties_map_twc_data() -> None:

@@ -1,0 +1,62 @@
+{
+  "entity": {
+    "sensor": {
+      "alert_count": {
+        "default": "mdi:alert-outline"
+      },
+      "condition_phrase": {
+        "default": "mdi:weather-partly-cloudy"
+      },
+      "integration_version": {
+        "default": "mdi:package-variant-closed"
+      },
+      "wind_gust": {
+        "default": "mdi:weather-windy"
+      },
+      "cloud_cover": {
+        "default": "mdi:cloud-percent"
+      },
+      "uv_index": {
+        "default": "mdi:sun-wireless"
+      },
+      "visibility": {
+        "default": "mdi:eye-outline"
+      },
+      "precip_amount": {
+        "default": "mdi:weather-rainy"
+      },
+      "condition_code": {
+        "default": "mdi:numeric"
+      },
+      "pollen_grass_index": {
+        "default": "mdi:grass"
+      },
+      "pollen_tree_index": {
+        "default": "mdi:tree-outline"
+      },
+      "pollen_ragweed_index": {
+        "default": "mdi:sprout"
+      },
+      "tropical_active_storm_count": {
+        "default": "mdi:weather-hurricane"
+      },
+      "tropical_active_storms": {
+        "default": "mdi:weather-hurricane"
+      },
+      "aq_index": {
+        "default": "mdi:air-filter"
+      },
+      "aq_category": {
+        "default": "mdi:air-filter"
+      },
+      "aq_primary_pollutant": {
+        "default": "mdi:molecule"
+      }
+    },
+    "weather": {
+      "ha_weather_provider": {
+        "default": "mdi:weather-partly-cloudy"
+      }
+    }
+  }
+}

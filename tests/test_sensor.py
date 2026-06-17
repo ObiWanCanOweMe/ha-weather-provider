@@ -366,6 +366,10 @@ async def test_sensor_setup_adds_current_detail_entities_when_enabled(hass) -> N
 
     entities = async_add_entities.call_args.args[0]
     assert len(entities) == ENTITY_SURFACE_BASELINE["current_detail"]
+    assert entities[0].device_info["identifiers"] == {(DOMAIN, entry.entry_id)}
+    assert entities[0].device_info["manufacturer"] == "The Weather Company"
+    assert entities[0].device_info["name"] == "The Weather Company"
+    assert entities[0].device_info["sw_version"] == INTEGRATION_VERSION
     assert [entity.unique_id for entity in entities[:5]] == [
         "entry-id_alert_count",
         "entry-id_condition_phrase",
